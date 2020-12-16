@@ -59,14 +59,6 @@ def check_optionals():
             CONFIG[config] = False
 
 
-def check_dirs():
-    for folder in ["unity_executable", "project_path"]:
-        if not os.path.isdir(CONFIG[folder]) and not os.path.isfile(CONFIG[folder]):
-            logger.log(f"{folder} was declared in config.json, but the folder doesn't exists!")
-            logger.log(f"Non existant folder: {CONFIG[folder]}")
-            raise Exception("Non existant required folder")
-
-
 def check_license_file():
     if not os.path.isfile(CONFIG["license_file"]):
         logger.log("Couldn't find the declared unity_license! Try creating a new one if you haven't yet.")
@@ -77,5 +69,4 @@ def check_license_file():
 load_envs_from_json()
 check_envs()
 check_config_file()
-check_dirs()
-check_license_file()
+# check_license_file()

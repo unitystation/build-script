@@ -14,28 +14,38 @@ def copy_server_build():
 
 def make_image():
     logger.log("Creating image")
-    cmd = Popen("docker build -t unitystation/unitystation:develop Docker",
-                stdout=PIPE, stderr=STDOUT, universal_newlines=True)
-    for line in cmd.stdout:
-        logger.log(line)
+    try:
+        cmd = Popen("docker build -t unitystation/unitystation:develop Docker",
+                    stdout=PIPE, stderr=STDOUT, universal_newlines=True, shell=True)
+        for line in cmd.stdout:
+            logger.log(line)
+        cmd.wait()
 
-    cmd.wait()
-    rc = cmd.returncode
-    logger.log(f"process says: {rc}")
+    except Exception as e:
+        logger.log(str(e))
+        messager.send_fail(str(e))
 
 
 def push_image():
     logger.log("Pushing docker image")
+    messager.send_success("Pushing docker image")
     try:
         cmd = Popen(f"docker login -p {os.environ['DOCKER_PASSWORD']} -u {os.environ['DOCKER_USERNAME']}",
-                    stdout=PIPE, stderr=STDOUT, universal_newlines=True)
+                    stdout=PIPE, stderr=STDOUT, universal_newlines=True, shell=True)
         cmd.wait()
     except Exception as e:
         logger.log(str(e))
         messager.send_fail(str(e))
         raise e
-
-    cmd = Popen("docker push unitystation/unitystation:develop", stdout=PIPE, stderr=STDOUT, universal_newlines=True)
+    try:
+        cmd = Popen("docker push unitystation/unitystation:develop",
+                    stdout=PIPE,
+                    stderr=STDOUT,
+                    universal_newlines=True,
+                    shell=True)
+    except Exception as e:
+        logger.log(str(e))
+        messager.send_fail(str(e))
 
     for line in cmd.stdout:
         logger.log(line)
@@ -49,5 +59,6 @@ def start_dockering():
     make_image()
     push_image()
 
-    logger.log("If everything went alright, go to portainer and recreate the container on staging")
-    messager.send_success("Process finished. If everything went alright, we have deployed a new build!")
+    finished = "Process finished, a new staging build has been deployed and should shortly be present on the server."
+    logger.log(finished)
+    messager.send_success(finished)

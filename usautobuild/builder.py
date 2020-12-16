@@ -9,29 +9,56 @@ import os
 
 exec_name = {
     "linuxserver": "Unitystation",
+    "StandaloneLinux64": "Unitystation",
     "StandaloneWindows64": "Unitystation.exe",
-    "StandaloneOSX": "Unitystation.app",
-    "StandaloneLinux64": "Unitystation"
+    "StandaloneOSX": "Unitystation.app"
+}
+
+platform_image = {
+    "linuxserver": "",
+    "StandaloneLinux64": "",
+    "StandaloneWindows64": "-windows",
+    "StandaloneOSX": "-mac"
 }
 
 
+def get_real_target(target: str):
+    if target.lower() == "linuxserver":
+        return "StandaloneLinux64"
+
+    return target
+
+
+def get_devBuild_flag(target: str):
+    if target.lower() == "linuxserver":
+        return "-devBuild"
+
+    return ""
+
+
 def make_command(target: str):
-    return f"docker run -it --rm " \
-           f"-v \"{CONFIG['project_path']}\":/root/project " \
-           f"gableroux/unity3d:{CONFIG['unity_version']}" \
-           f"xvfb-run --auto-servernum --server-args='-screen 0 640x480x24' " \
-           f"/opt/Unity/Editor/Unity -projectPath /root/project -quit "\
-           f"-batchmode -nographics -logfile - " \
-           f"-buildTarget {target} " \
-           f"-executeMethod BuildScript.BuildProject " \
-           f"-customBuildPath \"{os.path.join(CONFIG['output_dir'], target, exec_name[target])}\" " \
-           f"-customBuildName Unitysation "
+    return \
+        f"docker run -it --rm " \
+        f"-v {CONFIG['project_path']}:/root/UnityProject " \
+        f"-v {os.path.join(os.getcwd(), 'license')}:/root/.local/share/unity3d/Unity " \
+        f"-v {os.path.join(os.getcwd(), 'builds')}:/root/builds " \
+        f"-v {os.path.join(os.getcwd(), 'logs')}:/root/logs " \
+        f"gableroux/unity3d:{CONFIG['unity_version']}{platform_image[target]} " \
+        f"/opt/Unity/Editor/Unity " \
+        f"-batchmode -nographics " \
+        f"-projectPath /root/UnityProject " \
+        f"-buildTarget {get_real_target(target)} " \
+        f"-executeMethod BuildScript.BuildProject " \
+        f"-customBuildPath {os.path.join('/root', 'builds', target, exec_name[target])} " \
+        f"{get_devBuild_flag(target)} " \
+        f"-logfile /root/logs/{target}.txt " \
+        f"-quit"
 
 
 def build(command: str, target: str):
     try:
         logger.log(command)
-        cmd = Popen(command, stdout=PIPE, stderr=STDOUT, universal_newlines=True)
+        cmd = Popen(command, stdout=PIPE, stderr=STDOUT, universal_newlines=True, shell=True)
         for line in cmd.stdout:
             if line.strip():
                 logger.log(line)

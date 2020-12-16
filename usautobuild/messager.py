@@ -1,25 +1,26 @@
-from . import CONFIG, logger
-import requests
+import json
+from discord_webhook import DiscordWebhook
 
-
-def send_message(data):
-    if not CONFIG["discord_webhook"]:
-        return
-
-    result = requests.post(CONFIG["discord_webhook"], data=data, headers={"Content-Type": "application/json"})
-
-    try:
-        result.raise_for_status()
-    except requests.exceptions.HTTPError as err:
-        logger.log(str(err))
+from . import CONFIG
 
 
 def send_success(message: str):
-    data = {"content": message, "username": "build-server", "avatar_url": "https://i.redd.it/xomd902beh311.png"}
-    send_message(data)
+    if not CONFIG["discord_webhook"]:
+        return
+    weebhook = DiscordWebhook(
+        url=CONFIG["discord_webhook"],
+        content=message,
+        avatar_url="https://i.redd.it/xomd902beh311.png")
+    weebhook.execute()
 
 
 def send_fail(message: str):
+    if not CONFIG["discord_webhook"]:
+        return
     message = f"ERROR: \n```\n{message}\n```"
-    data = {"content": message, "username": "malf-ai"}
-    send_message(data)
+    weebhook = DiscordWebhook(
+        url=CONFIG["discord_webhook"],
+        content=message,
+        username="malf-ai")
+
+    weebhook.execute()
