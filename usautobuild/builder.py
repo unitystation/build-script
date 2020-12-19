@@ -38,7 +38,7 @@ def get_devBuild_flag(target: str):
 
 def make_command(target: str):
     return \
-        f"docker run -it --rm " \
+        f"docker run --rm " \
         f"-v {CONFIG['project_path']}:/root/UnityProject " \
         f"-v {os.path.join(os.getcwd(), 'license')}:/root/.local/share/unity3d/Unity " \
         f"-v {os.path.join(os.getcwd(), 'builds')}:/root/builds " \
