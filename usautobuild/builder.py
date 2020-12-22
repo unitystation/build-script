@@ -1,8 +1,7 @@
 import json
 import shutil
 from subprocess import Popen, PIPE, STDOUT
-
-import requests
+from datetime import datetime
 
 from . import CONFIG, logger, messager
 import os
@@ -81,26 +80,7 @@ def build(command: str, target: str):
 
 
 def get_build_number():
-    logger.log("Getting build number from last merged pr")
-    url = "https://api.github.com/repos/unitystation/unitystation/pulls?state=closed"
-    response = json.loads(requests.get(url).text)
-
-    if response is None:
-        logger.log("GitHub API is not responding. Can't continue.")
-        messager.send_fail("GitHub API is not responding. Can't continue.")
-        raise Exception("GitHub API unresponsive.")
-
-    build_number = 0
-    index = 0
-    while not build_number:
-        if response[index]["merged_at"] is not None:
-            build_number = response[index]["number"]
-        else:
-            index += 1
-
-    CONFIG["build_number"] = build_number
-    logger.log(f"Setting build number to {build_number} from last merged pr:")
-    logger.log(f"\"{response[index]['title']}\" by {response[index]['user']['login']}")
+    CONFIG["build_number"] = datetime.now().strftime("%y%m%d%H")
 
 
 def create_builds_folder():
