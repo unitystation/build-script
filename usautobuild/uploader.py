@@ -35,7 +35,7 @@ def attempt_ftp_upload(ftp, target):
     try:
         with open(local_file, "rb") as zip_file:
             logger.log(f"Uploading {target}...")
-            messager.send_success(f"Uploading {target}")
+            # messager.send_success(f"Uploading {target}")
             ftp.storbinary(f"STOR {upload_path}", zip_file)
     except all_errors as e:
         if "timed out" in str(e):

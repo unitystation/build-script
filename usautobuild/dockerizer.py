@@ -28,7 +28,7 @@ def make_image():
 
 def push_image():
     logger.log("Pushing docker image")
-    messager.send_success("Pushing docker image")
+    # messager.send_success("Pushing docker image")
     try:
         cmd = Popen(f"docker login -p {os.environ['DOCKER_PASSWORD']} -u {os.environ['DOCKER_USERNAME']}",
                     stdout=PIPE, stderr=STDOUT, universal_newlines=True, shell=True)

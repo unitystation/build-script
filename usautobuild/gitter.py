@@ -23,7 +23,14 @@ def update_project():
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT,
                                  universal_newlines=True)
+        for line in shell.stdout:
+            if "Current branch develop is up to date" in line:
+                raise NoChanges
         shell.wait()
+    except NoChanges as e:
+        logger.log(str(e))
+        messager.send_success(str(e))
+        raise e
     except Exception as e:
         logger.log(str(e))
         messager.send_fail(str(e))
@@ -56,3 +63,8 @@ def clone_project():
 def start_gitting():
     prepare_project_dir()
     CONFIG["project_path"] = os.path.join(unitystation_dir, "UnityProject")
+
+
+class NoChanges(Exception):
+    def __str__(self):
+        return "No changes found. Cancelling the build!"

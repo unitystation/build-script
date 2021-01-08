@@ -128,6 +128,7 @@ def clean_builds_folder():
 
 def start_building():
     logger.log("Starting build process...")
+    messager.send_success("Starting a new build!")
     get_build_number()
     clean_builds_folder()
     create_builds_folder()
@@ -135,7 +136,7 @@ def start_building():
 
     for target in CONFIG["target_platform"]:
         logger.log(f"\n****************\nStarting build of {target}...\n****************\n")
-        messager.send_success(f"Starting build of {target}")
+        # messager.send_success(f"Starting build of {target}")
         build(make_command(target), target)
 
     logger.log("\n\n*************************************************\n\n")
