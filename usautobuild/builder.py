@@ -1,5 +1,6 @@
 import json
 import shutil
+import re
 from subprocess import Popen, PIPE, STDOUT
 from datetime import datetime
 
@@ -126,6 +127,19 @@ def clean_builds_folder():
                 logger.log((str(e)))
 
 
+def set_addressables_mode():
+    file = os.path.join(CONFIG["project_path"], "Assets", "Resources", "Prefabs", "SceneConstruction",
+                        "NestedManagers", "GameData.prefab")
+    add_mode = int(CONFIG.get("addressable_mode", False))
+    with open(file, "r", encoding="UTF-8") as f:
+        file_content = f.read()
+
+    file_content = re.sub(r"DevBuild: \d", f"DevBuild: {add_mode}", file_content)
+
+    with open(file, "w", encoding="UTF-8") as f:
+        f.write(file_content)
+
+
 def start_building():
     logger.log("Starting build process...")
     messager.send_success("Starting a new build!")
@@ -133,6 +147,7 @@ def start_building():
     clean_builds_folder()
     create_builds_folder()
     set_jsons_data()
+    set_addressables_mode()
 
     for target in CONFIG["target_platform"]:
         logger.log(f"\n****************\nStarting build of {target}...\n****************\n")

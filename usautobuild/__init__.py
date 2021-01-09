@@ -19,6 +19,7 @@ req_configs = ["git_url",
                "output_dir"]
 
 optional_configs = ["abort_on_build_fail",
+                    "addressable_mode"
                     "discord_webhook"]
 
 
