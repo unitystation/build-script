@@ -17,7 +17,7 @@ def prepare_project_dir():
 def update_project():
     try:
         os.chdir(unitystation_dir)
-        logger.log("Updating the project to last state on github")
+        logger.log(f"Updating the project to last state on branch {CONFIG.get('branch', 'develop')}")
         shell = subprocess.Popen("git fetch --all && git checkout . && git clean -f &&"
                                  f" git rebase origin/{CONFIG.get('branch'), 'develop'}",
                                  shell=True,
@@ -25,7 +25,7 @@ def update_project():
                                  stderr=subprocess.STDOUT,
                                  universal_newlines=True)
         for line in shell.stdout:
-            if "Current branch develop is up to date" in line:
+            if f"Current branch {CONFIG.get('branch', 'develop')} is up to date" in line:
                 raise NoChanges
         shell.wait()
     except NoChanges as e:

@@ -15,4 +15,4 @@ services:
     labels:
       - io.portainer.accesscontrol.public
     volumes:
-      - /etc/UnityStation/admin:/server/Unitystation_Data/StreamingAssets/admin
+      - /root/admin:/server/Unitystation_Data/StreamingAssets/admin
