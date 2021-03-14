@@ -19,7 +19,7 @@ def prepare_project_dir():
 def checkout():
     try:
         os.chdir(unitystation_dir)
-        shell = subprocess.Popen(f"git checkout {CONFIG.get('branch', 'develop')}",
+        shell = subprocess.Popen(f"git checkout . && git clean -f && git checkout {CONFIG.get('branch', 'develop')}",
                                  shell=True,
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT,
