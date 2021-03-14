@@ -8,10 +8,29 @@ unitystation_dir = os.path.join(current_working_dir, "unitystation")
 
 
 def prepare_project_dir():
-    if os.path.isdir(unitystation_dir):
-        update_project()
-    else:
+    if not os.path.isdir(unitystation_dir):
         clone_project()
+        checkout()
+    else:
+        checkout()
+        update_project()
+
+
+def checkout():
+    try:
+        os.chdir(unitystation_dir)
+        shell = subprocess.Popen(f"git checkout {CONFIG.get('branch', 'develop')}",
+                                 shell=True,
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT,
+                                 universal_newlines=True)
+        for line in shell.stdout:
+            logger.log(line)
+
+    except Exception as e:
+        logger.log(str(e))
+        messager.send_fail(str(e))
+        raise e
 
 
 def update_project():
