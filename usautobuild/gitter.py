@@ -18,7 +18,8 @@ def update_project():
     try:
         os.chdir(unitystation_dir)
         logger.log("Updating the project to last state on github")
-        shell = subprocess.Popen("git fetch --all && git checkout . && git clean -f && git rebase origin/develop",
+        shell = subprocess.Popen("git fetch --all && git checkout . && git clean -f &&"
+                                 f" git rebase origin/{CONFIG.get('branch'), 'develop'}",
                                  shell=True,
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT,

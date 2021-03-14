@@ -3,7 +3,7 @@ import os
 from . import logger
 
 with open("config.json") as f:
-    CONFIG = json.load(f)
+    CONFIG : dict = json.load(f)
 
 envs = ["CDN_HOST",
         "CDN_USER",
