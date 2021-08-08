@@ -10,6 +10,7 @@ class Licenser:
         self.logger = logger
 
         self.prepare_licenses_folder()
+        self.run_command(self.make_command())
 
 
     def prepare_licenses_folder(self):
