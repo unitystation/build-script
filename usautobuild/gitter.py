@@ -1,90 +1,59 @@
 import os
-import subprocess
+from pathlib import Path
+from git import Repo, RemoteProgress
+from .config import  Config
+from .exceptions import NoChanges
+from logging import Logger
 
-from . import CONFIG, logger, messager
+class CloneProgress(RemoteProgress):
+    def __init__(self, logger: Logger):
+        super().__init__()
+        self.logger = logger
 
-current_working_dir = os.getcwd()
-unitystation_dir = os.path.join(current_working_dir, "unitystation")
+    def update(self, op_code, cur_count, max_count=None, message=''):
+        if message:
+            self.logger.debug(message)
 
+class Gitter:
+    remote_repo: str
+    local_repo: Repo
+    branch: str
 
-def prepare_project_dir():
-    if not os.path.isdir(unitystation_dir):
-        clone_project()
-        checkout()
-    else:
-        checkout()
-        update_project()
+    def __init__(self, config: Config, logger: Logger):
+        self.config = config
+        self.logger = logger
+        self.remote_repo = config.git_url
+        self.branch = config.git_branch
+        self.allow_no_changes = config.allow_no_changes
 
+    def prepare_git_directory(self):
+        self.logger.debug("Preparing git directory...")
+        work_dir = os.getcwd()
+        self.local_repo_dir = Path(work_dir, "local_repo")
 
-def checkout():
-    try:
-        os.chdir(unitystation_dir)
-        shell = subprocess.Popen(f"git checkout . && git clean -f && git checkout {CONFIG.get('branch', 'develop')}",
-                                 shell=True,
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.STDOUT,
-                                 universal_newlines=True)
-        for line in shell.stdout:
-            logger.log(line)
+        if not os.path.isdir(self.local_repo_dir):
+            os.mkdir(self.local_repo_dir)
+            self.local_repo = self.clone_repo(self.local_repo_dir)
+        else:
+            self.local_repo = Repo(self.local_repo_dir)
+            self.update_repo()
 
-    except Exception as e:
-        logger.log(str(e))
-        messager.send_fail(str(e))
-        raise e
+    def clone_repo(self, local_dir):
+        self.logger.debug("Clonning repository...")
+        return Repo.clone_from(self.remote_repo, local_dir, progress=CloneProgress(self.logger))
 
+    def update_repo(self):
+        self.logger.debug("Updating repo...")
+        last_commit = self.local_repo.head.commit
+        self.local_repo.remote("origin").fetch()
+        self.local_repo.git.reset("--hard", f"origin/{self.branch}")
+        new_commit = self.local_repo.head.commit
 
-def update_project():
-    try:
-        os.chdir(unitystation_dir)
-        logger.log(f"Updating the project to last state on branch {CONFIG.get('branch', 'develop')}")
-        shell = subprocess.Popen("git fetch --all && git checkout . && git clean -f &&"
-                                 f" git rebase origin/{CONFIG.get('branch'), 'develop'}",
-                                 shell=True,
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.STDOUT,
-                                 universal_newlines=True)
-        for line in shell.stdout:
-            if f"Current branch {CONFIG.get('branch', 'develop')} is up to date" in line:
-                raise NoChanges
-        shell.wait()
-    except NoChanges as e:
-        logger.log(str(e))
-        messager.send_success(str(e))
-        raise e
-    except Exception as e:
-        logger.log(str(e))
-        messager.send_fail(str(e))
-        raise e
-    else:
-        logger.log("Finished updating the project")
-        os.chdir(current_working_dir)
+        if last_commit == new_commit and not self.allow_no_changes:
+            self.logger.error("Couldn't find changes after updating repo. Aborting build!")
+            raise NoChanges(self.branch)
 
+    def start_gitting(self):
+        self.prepare_git_directory()
+        self.config.project_path = Path(self.local_repo_dir, "UnityProject")
 
-def clone_project():
-    try:
-        logger.log("Clonning the project from github")
-        cmd = subprocess.Popen(f"git clone {CONFIG['git_url']}",
-                               shell=True,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.STDOUT, universal_newlines=True)
-        cmd.wait()
-    except Exception as e:
-        logger.log(str(e))
-        messager.send_fail(str(e))
-        raise e
-    else:
-        logger.log("Finished clonning the project")
-
-    if not os.path.isdir(os.path.join(current_working_dir, "unitystation")):
-        logger.log("Something went bad when trying to clone the project!")
-        raise Exception("Something went bad when trying to clone the project!")
-
-
-def start_gitting():
-    prepare_project_dir()
-    CONFIG["project_path"] = os.path.join(unitystation_dir, "UnityProject")
-
-
-class NoChanges(Exception):
-    def __str__(self):
-        return "No changes found. Cancelling the build!"

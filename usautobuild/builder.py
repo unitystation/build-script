@@ -1,11 +1,14 @@
 import json
-import shutil
-import re
-from subprocess import Popen, PIPE, STDOUT
-from datetime import datetime
-
-from . import CONFIG, logger, messager
 import os
+import re
+import shutil
+from pathlib import Path
+from subprocess import Popen, PIPE
+
+from logging import Logger
+from .config import Config
+from .exceptions import InvalidProjectPath, BuildFailed, MissingLicenseFile
+import datetime
 
 exec_name = {
     "linuxserver": "Unitystation",
@@ -15,146 +18,180 @@ exec_name = {
 }
 
 platform_image = {
-    "linuxserver": "",
-    "StandaloneLinux64": "",
-    "StandaloneWindows64": "-windows",
-    "StandaloneOSX": "-mac"
+    "linuxserver": "-base-0",
+    "StandaloneLinux64": "-base-0",
+    "StandaloneWindows64": "-windows-mono-0",
+    "StandaloneOSX": "-mac-mono-0"
 }
 
 
-def get_real_target(target: str):
-    if target.lower() == "linuxserver":
-        return "StandaloneLinux64"
+class Builder:
+    def __init__(self, config: Config, logger: Logger):
+        self.config = config
+        self.logger = logger
 
-    return target
+    def produce_build_number(self):
+        self.logger.debug("Producing build number...")
+        self.config.build_number = datetime.datetime.now().strftime("%y%m%d%H")
 
+    def load_license(self):
+        self.logger.debug("Loading license file...")
+        try:
+            with open(self.config.license_file, 'r') as f:
+                os.environ["UNITY_LICENSE"] = f.read()
+        except FileNotFoundError:
+            self.logger.error(f"Missing license file at given directory: {self.config.license_file}")
+            raise MissingLicenseFile(self.config.license_file)
 
-def get_devBuild_flag(target: str):
-    if target.lower() == "linuxserver":
-        return "-devBuild"
+    def clean_builds_folder(self):
+        if os.path.isdir(self.config.output_dir):
+            self.logger.debug("Found output folder, cleaning up!")
+            shutil.rmtree(self.config.output_dir)
+            os.mkdir(self.config.output_dir)
 
-    return ""
+    def create_builds_folders(self):
+        for target in self.config.target_platforms:
+            try:
+                os.makedirs(Path(os.getcwd(), self.config.output_dir, target), exist_ok=True)
+            except Exception as e:
+                self.logger.error(f"Failed to create output folders because: {str(e)}!")
+                raise e
 
+    def set_jsons_data(self):
+        self.logger.debug("Changing data in json files from the game...")
+        if not self.config.project_path:
+            self.logger.error("Invalid path to unity project. Aborting...")
+            raise InvalidProjectPath()
 
-def make_command(target: str):
-    return \
-        f"docker run --rm " \
-        f"-v {CONFIG['project_path']}:/root/UnityProject " \
-        f"-v {os.path.join(os.getcwd(), 'license')}:/root/.local/share/unity3d/Unity " \
-        f"-v {os.path.join(os.getcwd(), 'builds')}:/root/builds " \
-        f"-v {os.path.join(os.getcwd(), 'logs')}:/root/logs " \
-        f"gableroux/unity3d:{CONFIG['unity_version']}{platform_image[target]} " \
-        f"/opt/Unity/Editor/Unity " \
-        f"-batchmode -nographics " \
-        f"-projectPath /root/UnityProject " \
-        f"-buildTarget {get_real_target(target)} " \
-        f"-executeMethod BuildScript.BuildProject " \
-        f"-customBuildPath {os.path.join('/root', 'builds', target, exec_name[target])} " \
-        f"{get_devBuild_flag(target)} " \
-        f"-logfile /root/logs/{target}.txt " \
-        f"-quit"
+        streaming_assets = Path(self.config.project_path, "Assets", "StreamingAssets")
+        build_info = Path(streaming_assets, "buildinfo.json")
+        config_json = Path(streaming_assets, "config", "config.json")
 
+        try:
+            with open(build_info, 'r') as f:
+                p_build_info = json.load(f)
+        except FileNotFoundError:
+            self.logger.error("Couldn't find build info file!")
+            raise FileNotFoundError()
+        try:
+            with open(config_json, 'r') as f:
+                p_config_json = json.load(f)
+        except FileNotFoundError:
+            self.logger.error("Coudln't find game config file!")
+            raise FileNotFoundError()
 
-def build(command: str, target: str):
-    try:
-        logger.log(command)
-        cmd = Popen(command, stdout=PIPE, stderr=STDOUT, universal_newlines=True, shell=True)
+        with open(build_info, 'w') as f:
+            p_build_info["BuildNumber"] = self.config.build_number
+            p_build_info["ForkName"] = self.config.forkname
+
+            json.dump(p_build_info, f, indent=4)
+
+        with open(config_json, 'w') as f:
+            url = self.config.cdn_download_url
+            p_config_json["WinDownload"] = url.format(self.config.forkname, "StandaloneWindows64",
+                                                      self.config.build_number)
+            p_config_json["OSXDownload"] = url.format(self.config.forkname, "StandaloneOSX",
+                                                      self.config.build_number)
+            p_config_json["LinuxDownload"] = url.format(self.config.forkname, "StandaloneLinux64",
+                                                        self.config.build_number)
+            json.dump(p_config_json, f, indent=4)
+
+    def set_addressables_mode(self):
+        self.logger.debug("Changing addressable mode from GameData.prefab...")
+        file = Path(self.config.project_path, "Assets", "Prefabs", "SceneConstruction", "NestedManagers",
+                    "GameData.prefab")
+
+        try:
+            with open(file, "r", encoding="UTF-8") as f:
+                file_content = f.read()
+        except FileNotFoundError:
+            self.logger.error("Coudn't find GameData prefab!")
+            raise FileNotFoundError()
+
+        file_content = re.sub(r"DevBuild: \d", f"DevBuild: 0", file_content)
+
+        with open(file, "w", encoding="UTF-8") as f:
+            f.write(file_content)
+
+    def make_command(self, target: str):
+        return \
+            f"docker run --rm " \
+            f"{self.generate_mounts()} " \
+            f"unityci/editor:{self.config.unity_version}{platform_image[target]} " \
+            f"unity-editor " \
+            f"{self.generate_build_args(target)} " \
+            f"-logfile /root/logs/{target}.txt " \
+            f"-quit"
+
+    def generate_mounts(self):
+        return \
+            f"-v {self.config.project_path}:/root/UnityProject " \
+            f"-v {self.config.output_dir}:/root/builds " \
+            f"-v {Path(os.getcwd(), 'logs')}:/root/logs " \
+            f"-v {Path(os.getcwd(), self.config.license_file)}:/root/.local/share/unity3d/Unity/Unity_lic.ulf "
+
+    def generate_build_args(self, target):
+        return \
+            f"-batchmode -nographics " \
+            f"-projectPath /root/UnityProject " \
+            f"-buildTarget {self.get_real_target(target)} " \
+            f"-executeMethod BuildScript.BuildProject " \
+            f"-customBuildPath {Path('/root', 'builds', exec_name[target])} " \
+            f"{self.get_devBuild_flag(target)}"
+
+    def get_real_target(self, target: str):
+        if target.lower() == "linuxserver":
+            return "StandaloneLinux64"
+
+        return target
+
+    def get_devBuild_flag(self, target: str):
+        if target.lower() == "linuxserver":
+            return "-devBuild -deepProfile"
+
+        return ""
+
+    def build(self, target):
+        command = self.make_command(target)
+        self.logger.debug(f"Running command\n{command}\n")
+        build_finished = False
+        cmd = Popen(command, stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
+
         for line in cmd.stdout:
             if line.strip():
-                logger.log(line)
-            if "Build succeeded!" in line:
-                CONFIG[f"{target}_build_status"] = "success"
+                self.logger.debug(line)
+            if "Build succeeded!" in line: # This is an awful way to check it, but Unity sucks dicks
+                build_finished = True
+
+        for line in cmd.stderr:
+            if line and not "Unable to find image" in line:
+                self.logger.error(line)
+                raise BuildFailed(target)
+
         cmd.wait()
-        exit_code = cmd.returncode
+        if not build_finished:
+            raise BuildFailed(target)
 
-    except Exception as e:
-        logger.log(str(e))
-        messager.send_fail(str(e))
-        raise e
+    def start_building(self):
+        self.logger.info("Starting a new build!")
 
-    CONFIG[f"{target}_build_status"] = "success" if exit_code == 0 else "fail"
+        self.produce_build_number()
+        self.load_license()
+        self.clean_builds_folder()
+        self.create_builds_folders()
+        self.set_jsons_data()
+        self.set_addressables_mode()
 
-    if CONFIG["abort_on_build_fail"] and CONFIG[f"{target}_build_status"] == "fail":
-        logger.log(f"build for {target} failed and config is set to abort process on fail, aborting")
-        messager.send_fail(f"build for {target} failed and config is set to abort process on fail, aborting")
-        raise Exception("A build failed and config is set to abort on fail")
+        for target in self.config.target_platforms:
+            self.logger.debug(f"Starting build for {target}...")
 
-
-def get_build_number():
-    CONFIG["build_number"] = datetime.now().strftime("%y%m%d%H")
-
-
-def create_builds_folder():
-    for target in CONFIG["target_platform"]:
-        try:
-            os.makedirs(
-                os.path.join(os.getcwd(), CONFIG["output_dir"], target), exist_ok=True)
-        except Exception as e:
-            logger.log(str(e))
-
-
-def set_jsons_data():
-    build_info = os.path.join(CONFIG["project_path"], "Assets", "StreamingAssets", "buildinfo.json")
-    config_json = os.path.join(CONFIG["project_path"], "Assets", "StreamingAssets", "config", "config.json")
-
-    with open(build_info) as read:
-        p_build_info = json.loads(read.read())
-
-    with open(config_json) as read:
-        p_config_json = json.loads(read.read())
-
-    with open(build_info, "w") as json_data:
-        p_build_info["BuildNumber"] = CONFIG["build_number"]
-        p_build_info["ForkName"] = CONFIG["forkName"]
-        json.dump(p_build_info, json_data, indent=4)
-
-    with open(config_json, "w") as json_data:
-        url = CONFIG["CDN_DOWNLOAD_URL"]
-        p_config_json["WinDownload"] = url.format(CONFIG["forkName"], "StandaloneWindows64", CONFIG["build_number"])
-        p_config_json["OSXDownload"] = url.format(CONFIG["forkName"], "StandaloneOSX", CONFIG["build_number"])
-        p_config_json["LinuxDownload"] = url.format(CONFIG["forkName"], "StandaloneLinux64", CONFIG["build_number"])
-        json.dump(p_config_json, json_data, indent=4)
-
-
-def clean_builds_folder():
-    for target in CONFIG['target_platform']:
-        folder = os.path.join(os.getcwd(), CONFIG["output_dir"], target)
-
-        if os.path.isdir(folder):
             try:
-                shutil.rmtree(folder)
-            except Exception as e:
-                logger.log((str(e)))
+                self.build(target)
+            except BuildFailed:
+                if self.config.abort_on_build_fail:
+                    self.logger.error(f"Build for {target} failed and config is set to abort on fail!")
+                    raise BuildFailed(target)
+            else:
+                self.logger.debug(f"Finished build for {target}")
 
-
-def set_addressables_mode():
-    file = os.path.join(CONFIG["project_path"], "Assets", "Resources", "Prefabs", "SceneConstruction",
-                        "NestedManagers", "GameData.prefab")
-    add_mode = int(CONFIG.get("addressable_mode", False))
-    with open(file, "r", encoding="UTF-8") as f:
-        file_content = f.read()
-
-    file_content = re.sub(r"DevBuild: \d", f"DevBuild: {add_mode}", file_content)
-
-    with open(file, "w", encoding="UTF-8") as f:
-        f.write(file_content)
-
-
-def start_building():
-    logger.log("Starting build process...")
-    messager.send_success("Starting a new build!")
-    get_build_number()
-    clean_builds_folder()
-    create_builds_folder()
-    set_jsons_data()
-    set_addressables_mode()
-
-    for target in CONFIG["target_platform"]:
-        logger.log(f"\n****************\nStarting build of {target}...\n****************\n")
-        # messager.send_success(f"Starting build of {target}")
-        build(make_command(target), target)
-
-    logger.log("\n\n*************************************************\n\n")
-    for target in CONFIG["target_platform"]:
-        logger.log(f"Build for {target} was a {CONFIG[target + '_build_status']}")
-    logger.log("\n\n*************************************************\n\n")
+        self.logger.info("Finished building!")

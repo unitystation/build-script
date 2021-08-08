@@ -1,63 +1,71 @@
-from . import CONFIG, logger, messager
-from shutil import make_archive as zip_folder
-import os
 from ftplib import FTP, all_errors
+from logging import Logger
+from pathlib import Path
+from shutil import make_archive as zip_folder
 
+from .config import Config
 
-def upload_to_cdn():
-    ftp = FTP()
+class Uploader:
+    def __init__(self, config: Config, logger: Logger):
+        self.logger = logger
+        self.cdn_host = config.cdn_host
+        self.cdn_user = config.cdn_user
+        self.cdn_password = config.cdn_password
+        self.forkname = config.forkname
+        self.target_platforms = config.target_platforms
+        self.build_number = config.build_number
+        self.output_dir = config.output_dir
 
-    try:
-        logger.log("Trying to connect to CDN")
-        ftp.connect(CONFIG["CDN_HOST"], 21, timeout=60)
-        ftp.login(CONFIG["CDN_USER"], CONFIG["CDN_PASSWORD"])
-        logger.log(f"CDN says: {ftp.getwelcome()}")
-        ftp.rmd(f"/unitystation/{CONFIG['forkName']}")
-        ftp.mkd(f"/unitystation/{CONFIG['forkName']}")
+    def upload_to_cdn(self):
+        ftp = FTP()
 
-        for target in CONFIG["target_platform"]:
-            attempt_ftp_upload(ftp, target)
-    except all_errors as e:
-        logger.log(f"Found FTP error: {str(e)}")
-        raise e
-    except Exception as e:
-        logger.log(f"A non FTP problem occured while trying to upload to CDN")
-        logger.log(f"{str(e)}")
-        raise e
+        try:
+            self.logger.debug("Trying to connect to CDN...")
 
-    ftp.close()
+            ftp.connect(self.cdn_host, 21, timeout=60)
+            ftp.login(self.cdn_user, self.cdn_password)
+            self.logger.debug(f"CDN says: {ftp.getwelcome()}")
 
+            # ftp.rmd(f"/unitystation/{self.forkname}")
+            # ftp.mkd(f"/unitystation/{self.forkname}")
 
-def attempt_ftp_upload(ftp, target):
-    ftp.mkd(f"/unitystation/{CONFIG['forkName']}/{target}/")
-    upload_path = f"/unitystation/{CONFIG['forkName']}/{target}/{str(CONFIG['build_number'])}.zip"
-    local_file = os.path.join(CONFIG["output_dir"], target + ".zip")
-    try:
-        with open(local_file, "rb") as zip_file:
-            logger.log(f"Uploading {target}...")
-            # messager.send_success(f"Uploading {target}")
-            ftp.storbinary(f"STOR {upload_path}", zip_file)
-    except all_errors as e:
-        if "timed out" in str(e):
-            logger.log("FTP connection timed out, retrying...")
-            attempt_ftp_upload(ftp, target)
-        else:
-            logger.log(f"Error trying to upload {local_file}")
-            messager.send_fail(f"Error trying to upload {local_file}")
-            logger.log(str(e))
+            for target in self.target_platforms:
+                self.attempt_ftp_upload(ftp, target)
 
+        except all_errors as e:
+            self.logger.error(str(e))
+            raise e
+        except Exception as e:
+            self.logger.error(f"A non FTP problem occured while trying to upload to CDN")
+            self.logger.error(f"{str(e)}")
+            raise e
 
-def zip_build_folder(target: str):
-    build_folder = f"{os.path.join(CONFIG['output_dir'], target)}"
-    output = f"{os.path.join(CONFIG['output_dir'], target)}"
+        ftp.close()
 
-    zip_folder(output, 'zip', build_folder)
+    def attempt_ftp_upload(self, ftp, target):
+        ftp.mkd(f"/unitystation/{self.forkname}/{target}/")
+        upload_path = f"/unitystation/{self.forkname}/{target}/{self.build_number}.zip"
+        local_file = Path(self.output_dir, target, ".zip")
+        try:
+            with open(local_file, "rb") as zip_file:
+                self.logger.debug(f"Uploading {target}...")
+                ftp.storbinary(f"STOR {upload_path}", zip_file)
+        except all_errors as e:
+            if "timed out" in str(e):
+                self.logger.debug("FTP connection timed out, retrying...")
+                self.attempt_ftp_upload(ftp, target)
+            else:
+                self.logger.error(f"Error trying to upload {local_file}")
+                self.logger.error(str(e))
 
+    def zip_build_folder(self, target: str):
+        build_folder = Path(self.output_dir, target)
+        zip_folder(build_folder, 'zip', build_folder)
 
-def start_upload():
-    logger.log("Starting upload to cdn process...")
+    def start_upload(self):
+        self.logger.debug("Starting upload to cdn process...")
 
-    for target in CONFIG["target_platform"]:
-        zip_build_folder(target)
+        for target in self.target_platforms:
+            self.zip_build_folder(target)
 
-    upload_to_cdn()
+        self.upload_to_cdn()
