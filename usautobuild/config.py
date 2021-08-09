@@ -100,7 +100,7 @@ class Config:
     def add_to_envs(self, config:dict):
         logging.info("Adding extra keys from config file to envs...")
         for key in config.keys():
-            if key not in ["git_url", "git_branch", "allow_new_changes",
+            if key not in ["git_url", "git_branch", "allow_no_changes",
                            "unity_version","target_platforms", "cdn_download_url",
                            "forkname","output_dir", "discord_webhook", "license_file"]:
                 os.environ[key] = config[key]
