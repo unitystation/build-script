@@ -26,7 +26,7 @@ class Licenser:
             f"-v {Path(os.getcwd(), 'licenses')}:/root/licenses " \
             f"-v {Path(os.getcwd(), 'logs')}:/root/logs " \
             f"-w /root/licenses " \
-            f"unityci/editor:{self.config.unity_version}-base-0 unity-edityor " \
+            f"unityci/editor:{self.config.unity_version}-base-0 unity-editor " \
             f"-batchmode -nographics -createManualActivationFile -logfile /root/logs/licenser.txt "
 
     def run_command(self, command: str):
