@@ -155,23 +155,21 @@ class Builder:
     def build(self, target):
         command = self.make_command(target)
         logger.debug(f"Running command\n{command}\n")
-        build_finished = False
+
         cmd = Popen(command, stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
 
         for line in cmd.stdout:
             if line.strip():
                 logger.debug(line)
-            if "Build succeeded!" in line:  # This is an awful way to check it, but Unity sucks dicks
-                build_finished = True
 
         for line in cmd.stderr:
-            if line and "Unable to find image" not in line:
+            if line and ("Unable to find image" not in line or "Pulling from" not in line):
                 logger.error(line)
                 raise BuildFailed(target)
 
         cmd.wait()
-        # if not build_finished:
-        #     raise BuildFailed(target)
+        if cmd.returncode != 0:
+            raise BuildFailed(target)
 
     def start_building(self):
         logger.info("Starting a new build!")
