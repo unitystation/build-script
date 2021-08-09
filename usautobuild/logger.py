@@ -2,10 +2,8 @@ import logging
 from logging import handlers
 import datetime
 import sys
-from .discord import DiscordHandler
-from .config import Config
 
-def create_logger(arg_level: str, config: Config):
+def setup_logger(arg_level: str):
 
     log = logging.getLogger('usautobuild')
     log.setLevel(get_log_level(arg_level))
@@ -22,13 +20,6 @@ def create_logger(arg_level: str, config: Config):
         backupCount=7)
     fh.setFormatter(format)
     log.addHandler(fh)
-
-    dh = DiscordHandler(config)
-    dh.setFormatter(format)
-    log.addHandler(dh)
-
-    return log
-
 
 def get_log_level(arg_level: str):
     if arg_level:

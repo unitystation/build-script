@@ -1,7 +1,8 @@
 import argparse
 
-from usautobuild.logger import create_logger
+from usautobuild.logger import setup_logger
 from usautobuild.licenser import Licenser
+from usautobuild.discord import Discord
 from usautobuild.builder import Builder
 from usautobuild.config import Config
 from usautobuild.gitter import Gitter
@@ -16,17 +17,18 @@ args = vars(ap.parse_args())
 
 
 def main():
+    setup_logger(args.get("log_level", "INFO"))
     config_file = args.get("config_file", None)
+
     config = Config(config_file)
-    logger = create_logger(args.get("log_level", "INFO"), config)
 
     if args.get("get_license", None):
-        Licenser(config, logger)
+        Licenser(config)
         return
-
-    gitter = Gitter(config, logger)
-    builder = Builder(config, logger)
-    uploader = Uploader(config, logger)
+    Discord(config)
+    gitter = Gitter(config)
+    builder = Builder(config)
+    uploader = Uploader(config)
 
     gitter.start_gitting()
     builder.start_building()

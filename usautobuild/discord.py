@@ -1,14 +1,22 @@
 import random
 import re
-from logging import Handler, LogRecord, ERROR, DEBUG
+from logging import Handler, LogRecord, ERROR, INFO, getLogger
 from discord_webhook import DiscordWebhook
 
 from .config import Config
 
+logger = getLogger("usautobuild")
 
 class Discord:
     def __init__(self, config: Config):
         self.discord_webhook = config.discord_webhook
+        if self.discord_webhook:
+            self.setup_handler()
+
+    def setup_handler(self):
+        handler = DiscordHandler(self)
+        handler.setLevel(INFO)
+        logger.addHandler(handler)
 
     def uwuizer(self, message: str):
         uwu_replacements = {
@@ -63,16 +71,14 @@ class Discord:
         self.send_message(message, True)
 
 class DiscordHandler(Handler):
-    def __init__(self, config: Config):
+    def __init__(self, discord: Discord):
         super().__init__()
-        self.discord = Discord(config)
+        self.discord = discord
 
     def emit(self, record: LogRecord) -> None:
         try:
             if record.levelno == ERROR:
                 self.discord.send_error(record.getMessage())
-            elif record.levelno == DEBUG:
-                pass
             else:
                 self.discord.send_normal(record.getMessage())
         except:

@@ -1,12 +1,13 @@
 import os
 import json
-import logging
+from logging import getLogger
 from pathlib import Path
 
 from .exceptions import MissingConfigFile, InvalidConfigFile
 
 from usautobuild.exceptions import MissingRequiredEnv
 
+logger = getLogger("usautobuild")
 
 class Config:
     required_envs = [
@@ -40,11 +41,11 @@ class Config:
         self.get_required_envs()
 
     def check_required_envs(self):
-        logging.info("Checking required envs...")
+        logger.info("Checking required envs...")
         for env in self.required_envs:
             i = os.getenv(env)
             if i is None:
-                logging.error(f"Required env is missing: {env}")
+                logger.error(f"Required env is missing: {env}")
                 raise MissingRequiredEnv(env)
 
     def get_required_envs(self):
@@ -58,16 +59,16 @@ class Config:
         if not self.config_file and os.path.isfile("config.json"):
             self.config_file = "config.json"
         if not self.config_file:
-            logging.info("No config file found, we will proceed with all default")
+            logger.info("No config file found, we will proceed with all default")
             return
         try:
             with open(self.config_file, 'r', encoding='utf-8') as f:
                 config = json.load(f)
         except FileNotFoundError:
-            logging.error(f"Missing Config file at given path: {self.config_file}")
+            logger.error(f"Missing Config file at given path: {self.config_file}")
             raise MissingConfigFile(self.config_file)
         except json.JSONDecodeError or TypeError:
-            logging.error("JSON config file seems to be invalid!")
+            logger.error("JSON config file seems to be invalid!")
             raise InvalidConfigFile
         else:
             self.add_to_envs(config)
@@ -98,10 +99,10 @@ class Config:
             self.abort_on_build_fail = config.get("abort_on_build_fail")
 
     def add_to_envs(self, config:dict):
-        logging.info("Adding extra keys from config file to envs...")
+        logger.info("Adding extra keys from config file to envs...")
         for key in config.keys():
             if key not in ["git_url", "git_branch", "allow_no_changes",
                            "unity_version","target_platforms", "cdn_download_url",
                            "forkname","output_dir", "discord_webhook", "license_file"]:
                 os.environ[key] = config[key]
-                logging.debug(f"added {key}")
+                logger.debug(f"added {key}")

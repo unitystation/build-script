@@ -5,7 +5,7 @@ import shutil
 from pathlib import Path
 from subprocess import Popen, PIPE
 
-from logging import Logger
+from logging import getLogger
 from .config import Config
 from .exceptions import InvalidProjectPath, BuildFailed, MissingLicenseFile
 import datetime
@@ -24,28 +24,29 @@ platform_image = {
     "StandaloneOSX": "-mac-mono-0"
 }
 
+logger = getLogger("usautobuild")
+
 
 class Builder:
-    def __init__(self, config: Config, logger: Logger):
+    def __init__(self, config: Config):
         self.config = config
-        self.logger = logger
 
     def produce_build_number(self):
-        self.logger.debug("Producing build number...")
+        logger.debug("Producing build number...")
         self.config.build_number = datetime.datetime.now().strftime("%y%m%d%H")
 
     def load_license(self):
-        self.logger.debug("Loading license file...")
+        logger.debug("Loading license file...")
         try:
             with open(self.config.license_file, 'r') as f:
                 os.environ["UNITY_LICENSE"] = f.read()
         except FileNotFoundError:
-            self.logger.error(f"Missing license file at given directory: {self.config.license_file}")
+            logger.error(f"Missing license file at given directory: {self.config.license_file}")
             raise MissingLicenseFile(self.config.license_file)
 
     def clean_builds_folder(self):
         if os.path.isdir(self.config.output_dir):
-            self.logger.debug("Found output folder, cleaning up!")
+            logger.debug("Found output folder, cleaning up!")
             shutil.rmtree(self.config.output_dir)
             os.mkdir(self.config.output_dir)
 
@@ -54,13 +55,13 @@ class Builder:
             try:
                 os.makedirs(Path(os.getcwd(), self.config.output_dir, target), exist_ok=True)
             except Exception as e:
-                self.logger.error(f"Failed to create output folders because: {str(e)}!")
+                logger.error(f"Failed to create output folders because: {str(e)}!")
                 raise e
 
     def set_jsons_data(self):
-        self.logger.debug("Changing data in json files from the game...")
+        logger.debug("Changing data in json files from the game...")
         if not self.config.project_path:
-            self.logger.error("Invalid path to unity project. Aborting...")
+            logger.error("Invalid path to unity project. Aborting...")
             raise InvalidProjectPath()
 
         streaming_assets = Path(self.config.project_path, "Assets", "StreamingAssets")
@@ -71,13 +72,13 @@ class Builder:
             with open(build_info, 'r') as f:
                 p_build_info = json.load(f)
         except FileNotFoundError:
-            self.logger.error("Couldn't find build info file!")
+            logger.error("Couldn't find build info file!")
             raise FileNotFoundError()
         try:
             with open(config_json, 'r') as f:
                 p_config_json = json.load(f)
         except FileNotFoundError:
-            self.logger.error("Coudln't find game config file!")
+            logger.error("Coudln't find game config file!")
             raise FileNotFoundError()
 
         with open(build_info, 'w') as f:
@@ -97,7 +98,7 @@ class Builder:
             json.dump(p_config_json, f, indent=4)
 
     def set_addressables_mode(self):
-        self.logger.debug("Changing addressable mode from GameData.prefab...")
+        logger.debug("Changing addressable mode from GameData.prefab...")
         file = Path(self.config.project_path, "Assets", "Prefabs", "SceneConstruction", "NestedManagers",
                     "GameData.prefab")
 
@@ -105,7 +106,7 @@ class Builder:
             with open(file, "r", encoding="UTF-8") as f:
                 file_content = f.read()
         except FileNotFoundError:
-            self.logger.error("Coudn't find GameData prefab!")
+            logger.error("Coudn't find GameData prefab!")
             raise FileNotFoundError()
 
         file_content = re.sub(r"DevBuild: \d", f"DevBuild: 0", file_content)
@@ -153,19 +154,19 @@ class Builder:
 
     def build(self, target):
         command = self.make_command(target)
-        self.logger.debug(f"Running command\n{command}\n")
+        logger.debug(f"Running command\n{command}\n")
         build_finished = False
         cmd = Popen(command, stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
 
         for line in cmd.stdout:
             if line.strip():
-                self.logger.debug(line)
-            if "Build succeeded!" in line: # This is an awful way to check it, but Unity sucks dicks
+                logger.debug(line)
+            if "Build succeeded!" in line:  # This is an awful way to check it, but Unity sucks dicks
                 build_finished = True
 
         for line in cmd.stderr:
-            if line and not "Unable to find image" in line:
-                self.logger.error(line)
+            if line and "Unable to find image" not in line:
+                logger.error(line)
                 raise BuildFailed(target)
 
         cmd.wait()
@@ -173,7 +174,7 @@ class Builder:
             raise BuildFailed(target)
 
     def start_building(self):
-        self.logger.info("Starting a new build!")
+        logger.info("Starting a new build!")
 
         self.produce_build_number()
         self.load_license()
@@ -183,15 +184,15 @@ class Builder:
         self.set_addressables_mode()
 
         for target in self.config.target_platforms:
-            self.logger.debug(f"Starting build for {target}...")
+            logger.debug(f"Starting build for {target}...")
 
             try:
                 self.build(target)
             except BuildFailed:
                 if self.config.abort_on_build_fail:
-                    self.logger.error(f"Build for {target} failed and config is set to abort on fail!")
+                    logger.error(f"Build for {target} failed and config is set to abort on fail!")
                     raise BuildFailed(target)
             else:
-                self.logger.debug(f"Finished build for {target}")
+                logger.debug(f"Finished build for {target}")
 
-        self.logger.info("Finished building!")
+        logger.info("Finished building!")
