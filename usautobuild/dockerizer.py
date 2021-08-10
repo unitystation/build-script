@@ -54,8 +54,8 @@ class Dockerizer:
 
             for line in cmd.stdout:
                 logger.debug(line)
-            for line in cmd.stderr:
-                raise Exception(line)
+            # for line in cmd.stderr:
+            #     raise Exception(line)
             cmd.wait()
         except Exception as e:
             logger.error(str(e))
@@ -69,8 +69,8 @@ class Dockerizer:
                         shell=True)
             for line in cmd.stdout:
                 logger.debug(line)
-            for line in cmd.stderr:
-                raise Exception(line)
+            # for line in cmd.stderr:
+            #     raise Exception(line)
             cmd.wait()
 
         except Exception as e:
@@ -81,5 +81,6 @@ class Dockerizer:
         logger.debug("Starting docker process")
         self.copy_dockerfile()
         self.copy_server_build()
+        self.make_images()
         self.push_images()
         logger.info("Process finished, a new staging build has been deployed and should shortly be present on the server.")
