@@ -1,4 +1,4 @@
-from ftplib import FTP, all_errors
+from ftplib import FTP, all_errors, error_perm
 from logging import getLogger
 from pathlib import Path
 from shutil import make_archive as zip_folder
@@ -45,7 +45,13 @@ class Uploader:
         ftp.close()
 
     def attempt_ftp_upload(self, ftp, target):
-        ftp.mkd(f"/unitystation/{self.forkname}/{target}/")
+        try:
+            ftp.mkd(f"/unitystation/{self.forkname}/{target}/")
+        except error_perm:
+            logger.debug(f"Folder for {self.forkname} already exists!")
+        except Exception as e:
+            raise e
+
         upload_path = f"/unitystation/{self.forkname}/{target}/{self.build_number}.zip"
         local_file = Path(self.output_dir, target, ".zip")
         try:
