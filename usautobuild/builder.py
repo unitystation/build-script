@@ -163,9 +163,7 @@ class Builder:
                 logger.debug(line)
 
         for line in cmd.stderr:
-            if line and ("Unable to find image" not in line or "Pulling from" not in line):
-                logger.error(line)
-                raise BuildFailed(target)
+            logger.error(line)
 
         cmd.wait()
         if cmd.returncode != 0:
