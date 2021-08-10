@@ -31,8 +31,9 @@ class Dockerizer:
     def make_images(self):
         logger.debug("Creating images...")
         try:
-            cmd = Popen(f"docker build -t unitystation/unitystation:{self.build_number} "
-                        f"-t unitystation/unitystation:{self.forkname} Docker",
+            cmd = Popen(f"docker build "
+                        f"-t unitystation/unitystation:{self.build_number} "
+                        f"-t unitystation/unitystation:{self.forkname}_latest Docker",
                         stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
             for line in cmd.stdout:
                 logger.debug(line)
@@ -48,7 +49,7 @@ class Dockerizer:
     def push_images(self):
         logger.debug("Pushing images...")
         try:
-            cmd = Popen(f"docker login -p {self.password} -u {self.username}",
+            cmd = Popen(f'echo "$DOCKER_PASSWORD" | docker login --username {self.username} --password-stdin',
                         stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
 
             for line in cmd.stdout:
