@@ -7,6 +7,7 @@ from usautobuild.builder import Builder
 from usautobuild.config import Config
 from usautobuild.gitter import Gitter
 from usautobuild.uploader import Uploader
+from usautobuild.dockerizer import Dockerizer
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-g", "--get-license", required=False,
@@ -29,10 +30,12 @@ def main():
     gitter = Gitter(config)
     builder = Builder(config)
     uploader = Uploader(config)
+    dockerizer = Dockerizer(config)
 
     gitter.start_gitting()
     builder.start_building()
     uploader.start_upload()
+    dockerizer.start_dockering()
 
 
 if __name__ == '__main__':
