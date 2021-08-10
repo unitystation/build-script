@@ -137,7 +137,7 @@ class Builder:
             f"-projectPath /root/UnityProject " \
             f"-buildTarget {self.get_real_target(target)} " \
             f"-executeMethod BuildScript.BuildProject " \
-            f"-customBuildPath {Path('/root', 'builds', exec_name[target])} " \
+            f"-customBuildPath {Path('/root', 'builds', target, exec_name[target])} " \
             f"{self.get_devBuild_flag(target)}"
 
     def get_real_target(self, target: str):

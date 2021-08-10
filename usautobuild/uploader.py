@@ -53,7 +53,7 @@ class Uploader:
             raise e
 
         upload_path = f"/unitystation/{self.forkname}/{target}/{self.build_number}.zip"
-        local_file = Path(self.output_dir, target, ".zip")
+        local_file = Path(self.output_dir, target+".zip")
         try:
             with open(local_file, "rb") as zip_file:
                 logger.debug(f"Uploading {target}...")
