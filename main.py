@@ -10,9 +10,9 @@ from usautobuild.uploader import Uploader
 from usautobuild.dockerizer import Dockerizer
 
 ap = argparse.ArgumentParser()
-ap.add_argument("-g", "--get-license", required=False,
+ap.add_argument("-gl", "--get-license", required=False,
                 help="If set to true, it will ignore all other procedure and just create a license file")
-ap.add_argument("-c", "--config-file", required=False, help="Path to the config file")
+ap.add_argument("-f", "--config-file", required=False, help="Path to the config file")
 ap.add_argument("-l", "--log-level", required=False, help="Log level to run this program")
 args = vars(ap.parse_args())
 

@@ -9,6 +9,7 @@ from usautobuild.exceptions import MissingRequiredEnv
 
 logger = getLogger("usautobuild")
 
+
 class Config:
     required_envs = [
         "CDN_HOST",
@@ -20,7 +21,7 @@ class Config:
     git_url = "https://github.com/unitystation/unitystation.git"
     git_branch = "develop"
     allow_no_changes = True
-    unity_version = "2020.1.6f1"
+    unity_version = "2020.1.17f1"
     target_platforms = ["linuxserver", "StandaloneWindows64", "StandaloneOSX", "StandaloneLinux64"]
     cdn_download_url = "https://unitystationfile.b-cdn.net/{}/{}/{}.zip"
     forkname = "UnityStationDevelop"
@@ -32,8 +33,7 @@ class Config:
     project_path = ""
     build_number = 0
 
-
-    def __init__(self, config_file:str = None):
+    def __init__(self, config_file: str = None):
         if config_file:
             self.config_file = config_file
         self.parse_config_file()
@@ -73,6 +73,8 @@ class Config:
         else:
             self.add_to_envs(config)
 
+        if config.get("build_number"):
+            self.build_number = config.get("build_number")
         if config.get("git_url"):
             self.git_url = config.get("git_url")
         if config.get("git_branch"):
@@ -98,11 +100,11 @@ class Config:
         if config.get("abort_on_build_fail"):
             self.abort_on_build_fail = config.get("abort_on_build_fail")
 
-    def add_to_envs(self, config:dict):
+    def add_to_envs(self, config: dict):
         logger.info("Adding extra keys from config file to envs...")
         for key in config.keys():
-            if key not in ["git_url", "git_branch", "allow_no_changes",
-                           "unity_version","target_platforms", "cdn_download_url",
-                           "forkname","output_dir", "discord_webhook", "license_file"]:
+            if key not in ["build_number", "git_url", "git_branch", "allow_no_changes",
+                           "unity_version", "target_platforms", "cdn_download_url",
+                           "forkname", "output_dir", "discord_webhook", "license_file"]:
                 os.environ[key] = config[key]
                 logger.debug(f"added {key}")

@@ -19,9 +19,6 @@ class Gitter:
 
     def __init__(self, config: Config):
         self.config = config
-        self.remote_repo = config.git_url
-        self.branch = config.git_branch
-        self.allow_no_changes = config.allow_no_changes
 
     def prepare_git_directory(self):
         logger.debug("Preparing git directory...")
@@ -46,7 +43,7 @@ class Gitter:
         self.local_repo.git.reset("--hard", f"origin/{self.branch}")
         new_commit = self.local_repo.head.commit
 
-        if last_commit == new_commit and not self.allow_no_changes:
+        if last_commit == new_commit and not self.config.allow_no_changes:
             logger.error("Couldn't find changes after updating repo. Aborting build!")
             raise NoChanges(self.branch)
 
