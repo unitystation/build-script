@@ -33,10 +33,12 @@ class Config:
     project_path = ""
     build_number = 0
 
-    def __init__(self, config_file: str = None):
+    def __init__(self, args: dict, config_file: str = None):
+        self.args = args
         if config_file:
             self.config_file = config_file
-        self.parse_config_file()
+        self.handle_config_file()
+        self.handle_args()
         self.check_required_envs()
         self.get_required_envs()
 
@@ -55,7 +57,7 @@ class Config:
         self.docker_password = os.getenv("DOCKER_PASSWORD")
         self.docker_username = os.getenv("DOCKER_USERNAME")
 
-    def parse_config_file(self):
+    def handle_config_file(self):
         if not self.config_file and os.path.isfile("config.json"):
             self.config_file = "config.json"
         if not self.config_file:
@@ -73,6 +75,16 @@ class Config:
         else:
             self.add_to_envs(config)
 
+        self.set_config(config)
+
+    def handle_args(self):
+        config = {}
+        if self.args.get("build_number"):
+            config["build_number"] = self.args.get("build_number")
+        # TODO add more args override
+        self.set_config(config)
+
+    def set_config(self, config):
         if config.get("build_number"):
             self.build_number = config.get("build_number")
         if config.get("git_url"):
@@ -103,8 +115,6 @@ class Config:
     def add_to_envs(self, config: dict):
         logger.info("Adding extra keys from config file to envs...")
         for key in config.keys():
-            if key not in ["build_number", "git_url", "git_branch", "allow_no_changes",
-                           "unity_version", "target_platforms", "cdn_download_url",
-                           "forkname", "output_dir", "discord_webhook", "license_file"]:
+            if key in self.required_envs:
                 os.environ[key] = config[key]
                 logger.debug(f"added {key}")

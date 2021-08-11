@@ -10,6 +10,7 @@ from usautobuild.uploader import Uploader
 from usautobuild.dockerizer import Dockerizer
 
 ap = argparse.ArgumentParser()
+ap.add_argument("-b", "--build-number", required=False, help="Force a particular build number")
 ap.add_argument("-gl", "--get-license", required=False,
                 help="If set to true, it will ignore all other procedure and just create a license file")
 ap.add_argument("-f", "--config-file", required=False, help="Path to the config file")
@@ -21,7 +22,7 @@ def main():
     setup_logger(args.get("log_level", "INFO"))
     config_file = args.get("config_file", None)
 
-    config = Config(config_file)
+    config = Config(args, config_file)
 
     if args.get("get_license", None):
         Licenser(config)
