@@ -40,7 +40,7 @@ class Gitter:
         logger.debug("Updating repo...")
         last_commit = self.local_repo.head.commit
         self.local_repo.remote("origin").fetch()
-        self.local_repo.git.reset("--hard", f"origin/{self.branch}")
+        self.local_repo.git.reset("--hard", f"origin/{self.config.git_branch}")
         new_commit = self.local_repo.head.commit
 
         if last_commit == new_commit and not self.config.allow_no_changes:
