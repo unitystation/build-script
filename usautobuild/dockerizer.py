@@ -29,7 +29,7 @@ class Dockerizer:
         try:
             cmd = Popen(f"docker build "
                         f"-t unitystation/unitystation:{self.config.build_number} "
-                        f"-t unitystation/unitystation:{self.config.forkname}_latest Docker",
+                        f"-t unitystation/unitystation:{self.config.git_branch} Docker",
                         stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
             for line in cmd.stdout:
                 logger.debug(line)
