@@ -27,7 +27,7 @@ class Dockerizer:
     def make_images(self):
         logger.debug("Creating images...")
         try:
-            cmd = Popen(f"docker build "
+            cmd = Popen(f"docker image prune -f && docker build "
                         f"-t unitystation/unitystation:{self.config.build_number} "
                         f"-t unitystation/unitystation:{self.config.git_branch} Docker",
                         stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
