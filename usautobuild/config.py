@@ -16,7 +16,11 @@ class Config:
         "CDN_USER",
         "CDN_PASSWORD",
         "DOCKER_PASSWORD",
-        "DOCKER_USERNAME"]
+        "DOCKER_USERNAME",
+        "CHANGELOG_API_URL",
+        "CHANGELOG_API_KEY",
+    ]
+
     config_file = None
     git_url = "https://github.com/unitystation/unitystation.git"
     git_branch = "develop"
@@ -56,6 +60,8 @@ class Config:
         self.cdn_password = os.getenv("CDN_PASSWORD")
         self.docker_password = os.getenv("DOCKER_PASSWORD")
         self.docker_username = os.getenv("DOCKER_USERNAME")
+        self.changelog_api_url = os.getenv("CHANGELOG_API_URL")
+        self.changelog_api_key = os.getenv("CHANGELOG_API_KEY")
 
     def handle_config_file(self):
         if not self.config_file and os.path.isfile("config.json"):

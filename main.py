@@ -8,6 +8,7 @@ from usautobuild.config import Config
 from usautobuild.gitter import Gitter
 from usautobuild.uploader import Uploader
 from usautobuild.dockerizer import Dockerizer
+from usautobuild.api_caller import ApiCaller
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-b", "--build-number", required=False, help="Force a particular build number")
@@ -37,6 +38,9 @@ def main():
     builder.start_building()
     uploader.start_upload()
     dockerizer.start_dockering()
+
+    api_caller = ApiCaller(config.changelog_api_url, config.changelog_api_key, config.build_number)
+    api_caller.post_new_version()
 
 
 if __name__ == '__main__':
