@@ -11,7 +11,8 @@ class ApiCaller:
 
     def post_new_version(self):
         data = {
-            "build_number": str(self.build_number),
+            "version_number": str(self.build_number),
+            "date_created": self.version_to_date(str(self.build_number)),
             "secret_token": self.api_key
         }
 
