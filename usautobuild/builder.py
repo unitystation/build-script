@@ -45,7 +45,7 @@ class Builder:
             raise MissingLicenseFile(self.config.license_file)
 
     def clean_builds_folder(self):
-        path = Path(self.config.output_dir)
+        path = self.config.output_dir
         if path.is_dir():
             log.debug("Found output folder, cleaning up!")
             shutil.rmtree(path)
