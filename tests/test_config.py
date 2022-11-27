@@ -1,6 +1,7 @@
 import unittest
 import os
 from unittest.mock import patch
+from pathlib import Path
 
 from usautobuild.config import Config
 from usautobuild.exceptions import MissingRequiredEnv, MissingConfigFile, MissingRequiredConfig
@@ -33,7 +34,7 @@ class ConfigTest(unittest.TestCase):
         ], )
         self.assertEqual(c.cdn_download_url, "https://unitystationfile.b-cdn.net/{}/{}/{}.zip")
         self.assertEqual(c.forkname, "UnityStationDevelop")
-        self.assertEqual(c.output_dir, "builds")
+        self.assertEqual(c.output_dir, Path("builds"))
         self.assertEqual(c.abort_on_build_fail, True)
 
 

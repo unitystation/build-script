@@ -1,8 +1,7 @@
 import argparse
 
-from usautobuild.logger import setup_logger
+from usautobuild.logger import setup_logger, setup_extra_loggers
 from usautobuild.licenser import Licenser
-from usautobuild.discord import Discord
 from usautobuild.builder import Builder
 from usautobuild.config import Config
 from usautobuild.gitter import Gitter
@@ -14,21 +13,21 @@ ap = argparse.ArgumentParser()
 ap.add_argument("-b", "--build-number", required=False, help="Force a particular build number")
 ap.add_argument("-gl", "--get-license", required=False,
                 help="If set to true, it will ignore all other procedure and just create a license file")
-ap.add_argument("-f", "--config-file", required=False, help="Path to the config file")
-ap.add_argument("-l", "--log-level", required=False, help="Log level to run this program")
+ap.add_argument("-f", "--config-file", required=False, help="Path to the config file", default=None)
+ap.add_argument("-l", "--log-level", type=str, required=False, help="Log level to run this program", default="INFO")
 args = vars(ap.parse_args())
 
 
 def main():
-    setup_logger(args.get("log_level", "INFO"))
-    config_file = args.get("config_file", None)
+    setup_logger(args["log_level"])
 
-    config = Config(args, config_file)
+    config = Config(args, args["config_file"])
+    setup_extra_loggers(config)
 
     if args.get("get_license", None):
         Licenser(config)
         return
-    Discord(config)
+
     gitter = Gitter(config)
     builder = Builder(config)
     uploader = Uploader(config)

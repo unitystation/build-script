@@ -15,17 +15,6 @@ optional = false
 python-versions = "*"
 
 [[package]]
-name = "discord-webhook"
-version = "0.11.0"
-description = "execute discord webhooks"
-category = "main"
-optional = false
-python-versions = "*"
-
-[package.dependencies]
-requests = ">=2.19.1"
-
-[[package]]
 name = "idna"
 version = "2.10"
 description = "Internationalized Domain Names in Applications (IDNA)"
@@ -77,10 +66,6 @@ certifi = [
 chardet = [
     {file = "chardet-3.0.4-py2.py3-none-any.whl", hash = "sha256:fc323ffcaeaed0e0a02bf4d117757b98aed530d9ed4531e3e15460124c106691"},
     {file = "chardet-3.0.4.tar.gz", hash = "sha256:84ab92ed1c4d4f16916e05906b6b75a6c0fb5db821cc65e70cbd64a3e2a5eaae"},
-]
-discord-webhook = [
-    {file = "discord-webhook-0.11.0.tar.gz", hash = "sha256:b4a6ea2d660fc7787c8539fc802a399399c784eea6597a7131ed27464500a3d4"},
-    {file = "discord_webhook-0.11.0-py3-none-any.whl", hash = "sha256:36cc406b8a4221d574d55a33d15967c06d5f80a9f8ba7f336675d1b4975842fb"},
 ]
 idna = [
     {file = "idna-2.10-py2.py3-none-any.whl", hash = "sha256:b97d804b1e9b523befed77c48dacec60e6dcb0b5391d57af6a65a312a90648c0"},
