@@ -24,7 +24,7 @@ platform_image = {
     "StandaloneOSX": "-mac-mono-1"
 }
 
-logger = getLogger("usautobuild")
+log = getLogger("usautobuild")
 
 
 class Builder:
@@ -32,36 +32,37 @@ class Builder:
         self.config = config
 
     def produce_build_number(self):
-        logger.debug("Producing build number...")
+        log.debug("Producing build number...")
         self.config.build_number = datetime.datetime.now().strftime("%y%m%d%H")
 
     def load_license(self):
-        logger.debug("Loading license file...")
+        log.debug("Loading license file...")
         try:
             with open(self.config.license_file, 'r') as f:
                 os.environ["UNITY_LICENSE"] = f.read()
         except FileNotFoundError:
-            logger.error(f"Missing license file at given directory: {self.config.license_file}")
+            log.error(f"Missing license file at given directory: {self.config.license_file}")
             raise MissingLicenseFile(self.config.license_file)
 
     def clean_builds_folder(self):
-        if os.path.isdir(self.config.output_dir):
-            logger.debug("Found output folder, cleaning up!")
-            shutil.rmtree(self.config.output_dir)
-            os.mkdir(self.config.output_dir)
+        path = Path(self.config.output_dir)
+        if path.is_dir():
+            log.debug("Found output folder, cleaning up!")
+            shutil.rmtree(path)
+            path.mkdir()
 
     def create_builds_folders(self):
         for target in self.config.target_platforms:
             try:
-                os.makedirs(Path(os.getcwd(), self.config.output_dir, target), exist_ok=True)
+                (Path.cwd() / self.config.output_dir / target).mkdir(exist_ok=True)
             except Exception as e:
-                logger.error(f"Failed to create output folders because: {str(e)}!")
+                log.error(f"Failed to create output folders because: {e}!")
                 raise e
 
     def set_jsons_data(self):
-        logger.debug("Changing data in json files from the game...")
+        log.debug("Changing data in json files from the game...")
         if not self.config.project_path:
-            logger.error("Invalid path to unity project. Aborting...")
+            log.error("Invalid path to unity project. Aborting...")
             raise InvalidProjectPath()
 
         streaming_assets = Path(self.config.project_path, "Assets", "StreamingAssets")
@@ -72,14 +73,14 @@ class Builder:
             with open(build_info, 'r') as f:
                 p_build_info = json.load(f)
         except FileNotFoundError:
-            logger.error("Couldn't find build info file!")
-            raise FileNotFoundError()
+            log.error("Couldn't find build info file!")
+            raise
         try:
             with open(config_json, 'r') as f:
                 p_config_json = json.load(f)
         except FileNotFoundError:
-            logger.error("Coudln't find game config file!")
-            raise FileNotFoundError()
+            log.error("Coudln't find game config file!")
+            raise
 
         with open(build_info, 'w') as f:
             p_build_info["BuildNumber"] = self.config.build_number
@@ -98,7 +99,7 @@ class Builder:
             json.dump(p_config_json, f, indent=4)
 
     def set_addressables_mode(self):
-        logger.debug("Changing addressable mode from GameData.prefab...")
+        log.debug("Changing addressable mode from GameData.prefab...")
         file = Path(self.config.project_path, "Assets", "Prefabs", "SceneConstruction", "NestedManagers",
                     "GameData.prefab")
 
@@ -106,39 +107,48 @@ class Builder:
             with open(file, "r", encoding="UTF-8") as f:
                 file_content = f.read()
         except FileNotFoundError:
-            logger.error("Coudn't find GameData prefab!")
+            log.error("Coudn't find GameData prefab!")
             raise FileNotFoundError()
 
-        file_content = re.sub(r"DevBuild: \d", f"DevBuild: 0", file_content)
+        file_content = re.sub(r"DevBuild: \d", "DevBuild: 0", file_content)
 
         with open(file, "w", encoding="UTF-8") as f:
             f.write(file_content)
 
     def make_command(self, target: str):
-        return \
-            f"docker run --rm " \
-            f"{self.generate_mounts()} " \
-            f"unityci/editor:{self.config.unity_version}{platform_image[target]} " \
-            f"unity-editor " \
-            f"{self.generate_build_args(target)} " \
-            f"-logfile /root/logs/{target}.txt " \
+        image = f"unityci/editor:{self.config.unity_version}{platform_image[target]}"
+
+        return (
+            # pull first because docker run does not have -q alternative
+            f"docker pull -q {image} && "
+            f"docker run --rm "
+            f"{self.generate_mounts()} "
+            f"{image} "
+            f"unity-editor "
+            f"{self.generate_build_args(target)} "
+            f"-logfile /root/logs/{target}.txt "
             f"-quit"
+        )
 
     def generate_mounts(self):
-        return \
-            f"-v {self.config.project_path}:/root/UnityProject " \
-            f"-v {self.config.output_dir}:/root/builds " \
-            f"-v {Path(os.getcwd(), 'logs')}:/root/logs " \
-            f"-v {Path(os.getcwd(), self.config.license_file)}:/root/.local/share/unity3d/Unity/Unity_lic.ulf "
+        cwd = Path.cwd()
+
+        return (
+            f"-v {self.config.project_path}:/root/UnityProject "
+            f"-v {self.config.output_dir}:/root/builds "
+            f"-v {cwd /'logs'}:/root/logs "
+            f"-v {cwd / self.config.license_file}:/root/.local/share/unity3d/Unity/Unity_lic.ulf "
+        )
 
     def generate_build_args(self, target):
-        return \
-            f"-nographics " \
-            f"-projectPath /root/UnityProject " \
-            f"-buildTarget {self.get_real_target(target)} " \
-            f"-executeMethod BuildScript.BuildProject " \
-            f"-customBuildPath {Path('/root', 'builds', target, exec_name[target])} " \
+        return (
+            f"-nographics "
+            f"-projectPath /root/UnityProject "
+            f"-buildTarget {self.get_real_target(target)} "
+            f"-executeMethod BuildScript.BuildProject "
+            f"-customBuildPath {Path('/root', 'builds', target, exec_name[target])} "
             f"{self.get_devBuild_flag(target)}"
+        )
 
     def get_real_target(self, target: str):
         if target.lower() == "linuxserver":
@@ -154,23 +164,23 @@ class Builder:
 
     def build(self, target):
         command = self.make_command(target)
-        logger.debug(f"Running command\n{command}\n")
+        log.debug(f"Running command\n{command}\n")
 
         cmd = Popen(command, stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
 
         for line in cmd.stdout:
             if line.strip():
-                logger.debug(line)
+                log.debug(line)
 
         for line in cmd.stderr:
-            logger.error(line)
+            log.error(line)
 
         cmd.wait()
         if cmd.returncode != 0:
             raise BuildFailed(target)
 
     def start_building(self):
-        logger.info("Starting a new build!")
+        log.info("Starting a new build!")
 
         self.produce_build_number()
         self.load_license()
@@ -180,15 +190,15 @@ class Builder:
         self.set_addressables_mode()
 
         for target in self.config.target_platforms:
-            logger.debug(f"Starting build for {target}...")
+            log.debug(f"Starting build for {target}...")
 
             try:
                 self.build(target)
             except BuildFailed:
                 if self.config.abort_on_build_fail:
-                    logger.error(f"Build for {target} failed and config is set to abort on fail!")
+                    log.error(f"Build for {target} failed and config is set to abort on fail!")
                     raise BuildFailed(target)
             else:
-                logger.debug(f"Finished build for {target}")
+                log.debug(f"Finished build for {target}")
 
-        logger.info("Finished building!")
+        log.info("Finished building!")
