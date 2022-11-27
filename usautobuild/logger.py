@@ -29,21 +29,22 @@ def setup_logger(arg_level: str):
 
     log.setLevel(str_to_log_level(arg_level))
 
+    fmt = logging.Formatter("[%(asctime)s::%(name)s::%(levelname)s] %(message)s")
+
+    sh = logging.StreamHandler(sys.stdout)
+    sh.setFormatter(fmt)
+    log.addHandler(sh)
+
     log_path = Path("logs")
     log_path.mkdir(exist_ok=True)
 
-    fmt = logging.Formatter("[%(asctime)s::%(name)s::%(levelname)s] %(message)s")
-
-    for handler in (
-        logging.StreamHandler(sys.stdout),
-        handlers.RotatingFileHandler(
-            log_path / datetime.datetime.now().strftime("%y-%m-%d-%H.log"),
-            maxBytes=(1048576 * 5),
-            backupCount=7,
-        ),
-    ):
-        handler.setFormatter(fmt)
-        log.addHandler(handler)
+    fh = handlers.RotatingFileHandler(
+        log_path / datetime.datetime.now().strftime("%y-%m-%d-%H.log"),
+        maxBytes=(1048576 * 5),
+        backupCount=7,
+    )
+    fh.setFormatter(fmt)
+    log.addHandler(fh)
 
 
 def setup_extra_loggers(config: Config):

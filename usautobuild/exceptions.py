@@ -53,6 +53,6 @@ class BuildFailed(BaseException):
 
 class MissingLicenseFile(BaseException):
     def __init__(self, path):
-        super(MissingLicenseFile, self).__init__(
+        super().__init__(
             f"License file couldn't be found in set directory {path}"
         )
