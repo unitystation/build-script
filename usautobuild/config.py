@@ -44,24 +44,17 @@ class Config:
             self.config_file = Path(config_file)
         self.handle_config_file()
         self.handle_args()
-        self.check_required_envs()
-        self.get_required_envs()
+        self.set_required_envs()
 
-    def check_required_envs(self):
-        log.info("Checking required envs...")
+    def set_required_envs(self):
+        log.info("Setting required envs...")
         for env in self.required_envs:
-            if env not in os.environ:
+            value = os.environ.get(env)
+            if value is None:
                 log.error(f"Required env is missing: {env}")
                 raise MissingRequiredEnv(env)
 
-    def get_required_envs(self):
-        self.cdn_host = os.environ["CDN_HOST"]
-        self.cdn_user = os.environ["CDN_USER"]
-        self.cdn_password = os.environ["CDN_PASSWORD"]
-        self.docker_password = os.environ["DOCKER_PASSWORD"]
-        self.docker_username = os.environ["DOCKER_USERNAME"]
-        self.changelog_api_url = os.environ["CHANGELOG_API_URL"]
-        self.changelog_api_key = os.environ["CHANGELOG_API_KEY"]
+            setattr(self, env, value)
 
     def handle_config_file(self):
         if self.config_file is None:
