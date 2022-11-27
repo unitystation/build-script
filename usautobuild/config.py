@@ -12,15 +12,23 @@ log = getLogger("usautobuild")
 
 
 class Config:
-    required_envs = [
-        "CDN_HOST",
-        "CDN_USER",
-        "CDN_PASSWORD",
-        "DOCKER_PASSWORD",
-        "DOCKER_USERNAME",
-        "CHANGELOG_API_URL",
-        "CHANGELOG_API_KEY",
-    ]
+    required_envs = {
+        "CDN_HOST": "cdn_host",
+        "CDN_USER": "cdn_user",
+        "CDN_PASSWORD": "cdn_password",
+        "DOCKER_PASSWORD": "docker_password",
+        "DOCKER_USERNAME": "docker_username",
+        "CHANGELOG_API_URL": "changelog_api_url",
+        "CHANGELOG_API_KEY": "changelog_api_key",
+    }
+
+    cdn_host: str
+    cdn_user: str
+    cdn_password: str
+    docker_password: str
+    docker_username: str
+    changelog_api_url: str
+    changelog_api_key: str
 
     config_file = None
     git_url = "https://github.com/unitystation/unitystation.git"
@@ -48,13 +56,13 @@ class Config:
 
     def set_required_envs(self):
         log.info("Setting required envs...")
-        for env in self.required_envs:
-            value = os.environ.get(env)
+        for env_key, config_key in self.required_envs.items():
+            value = os.environ.get(env_key)
             if value is None:
-                log.error(f"Required env is missing: {env}")
-                raise MissingRequiredEnv(env)
+                log.error(f"Required env is missing: {env_key}")
+                raise MissingRequiredEnv(env_key)
 
-            setattr(self, env, value)
+            setattr(self, config_key, value)
 
     def handle_config_file(self):
         if self.config_file is None:
