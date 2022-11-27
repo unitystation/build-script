@@ -21,7 +21,7 @@ args = vars(ap.parse_args())
 def main():
     setup_logger(args["log_level"])
 
-    config = Config(args
+    config = Config(args, args["config_file"])
     setup_extra_loggers(config)
 
     if args.get("get_license", None):

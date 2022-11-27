@@ -2,6 +2,7 @@ import os
 import json
 from logging import getLogger
 from pathlib import Path
+from typing import Optional
 
 from .exceptions import MissingConfigFile, InvalidConfigFile
 
@@ -37,8 +38,10 @@ class Config:
     project_path = ""
     build_number = 0
 
-    def __init__(self, args: dict):
+    def __init__(self, args: dict, config_file: Optional[str] = None):
         self.args = args
+        if config_file:
+            self.config_file = Path(config_file)
         self.handle_config_file()
         self.handle_args()
         self.set_required_envs()
@@ -79,19 +82,13 @@ class Config:
 
     def handle_args(self):
         config = {}
-        for arg_var in (
-            "build_number",
-            "config_file",
-        ):
-            if arg_var in self.args:
-                config[arg_var] = self.args[arg_var]
-
+        if self.args.get("build_number"):
+            config["build_number"] = self.args.get("build_number")
         # TODO add more args override
         self.set_config(config)
 
     def set_config(self, config):
         for path_var in (
-            "config_file",
             "output_dir",
             "license_file",
         ):
