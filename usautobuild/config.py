@@ -22,7 +22,6 @@ class Config:
         "CHANGELOG_API_URL": "changelog_api_url",
         "CHANGELOG_API_KEY": "changelog_api_key",
     }
-    config_to_envs_map = {v: k for k, v in envs_to_config_map.items()}
 
     cdn_host: str
     cdn_user: str
