@@ -22,6 +22,7 @@ class Config:
         "CHANGELOG_API_URL": "changelog_api_url",
         "CHANGELOG_API_KEY": "changelog_api_key",
     }
+    config_to_envs_map = {v: k for k, v in envs_to_config_map.items()}
 
     cdn_host: str
     cdn_user: str
@@ -85,6 +86,7 @@ class Config:
             log.error("JSON config file seems to be invalid!")
             raise InvalidConfigFile
 
+        self.add_to_envs(config)
         self.set_config(config)
 
     def handle_args(self) -> None:
@@ -116,3 +118,10 @@ class Config:
         ):
             if var in config:
                 setattr(self, var, config[var])
+
+    def add_to_envs(self, config: dict[str, Any]) -> None:
+        log.info("Adding extra keys from config file to envs...")
+        for config_key, value in config.items():
+            if (env_key := self.config_to_envs_map.get(config_key)) is not None:
+                os.environ[env_key] = value
+                log.debug(f"added {env_key}")
