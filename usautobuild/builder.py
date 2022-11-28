@@ -1,6 +1,5 @@
 import datetime
 import json
-import os
 import re
 import shutil
 
@@ -36,12 +35,9 @@ class Builder:
         log.debug("Producing build number...")
         self.config.build_number = int(datetime.datetime.now().strftime("%y%m%d%H"))
 
-    def load_license(self) -> None:
-        log.debug("Loading license file...")
-        try:
-            with open(self.config.license_file, "r") as f:
-                os.environ["UNITY_LICENSE"] = f.read()
-        except FileNotFoundError:
+    def check_license(self) -> None:
+        log.debug("Checking license file...")
+        if not self.config.license_file.exists():
             log.error(f"Missing license file at given directory: {self.config.license_file}")
             raise MissingLicenseFile(self.config.license_file)
 
@@ -185,8 +181,8 @@ class Builder:
     def start_building(self) -> None:
         log.info("Starting a new build!")
 
+        self.check_license()
         self.produce_build_number()
-        self.load_license()
         self.clean_builds_folder()
         self.create_builds_folders()
         self.set_jsons_data()

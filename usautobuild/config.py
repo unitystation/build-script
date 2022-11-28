@@ -85,8 +85,6 @@ class Config:
         except json.JSONDecodeError:
             log.error("JSON config file seems to be invalid!")
             raise InvalidConfigFile
-        else:
-            self.add_to_envs(config)
 
         self.set_config(config)
 
@@ -119,11 +117,3 @@ class Config:
         ):
             if var in config:
                 setattr(self, var, config[var])
-
-    def add_to_envs(self, config: dict[str, Any]) -> None:
-        log.info("Adding extra keys from config file to envs...")
-        for config_key, value in config.items():
-            env_key = self.config_to_envs_map.get(config_key)
-            if env_key is not None:
-                os.environ[env_key] = value
-                log.debug(f"added {env_key}")
