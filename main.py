@@ -1,24 +1,28 @@
 import argparse
 
-from usautobuild.logger import setup_logger, setup_extra_loggers
-from usautobuild.licenser import Licenser
+from usautobuild.api_caller import ApiCaller
 from usautobuild.builder import Builder
 from usautobuild.config import Config
-from usautobuild.gitter import Gitter
-from usautobuild.uploader import Uploader
 from usautobuild.dockerizer import Dockerizer
-from usautobuild.api_caller import ApiCaller
+from usautobuild.gitter import Gitter
+from usautobuild.licenser import Licenser
+from usautobuild.logger import setup_extra_loggers, setup_logger
+from usautobuild.uploader import Uploader
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-b", "--build-number", required=False, help="Force a particular build number")
-ap.add_argument("-gl", "--get-license", required=False,
-                help="If set to true, it will ignore all other procedure and just create a license file")
+ap.add_argument(
+    "-gl",
+    "--get-license",
+    required=False,
+    help="If set to true, it will ignore all other procedure and just create a license file",
+)
 ap.add_argument("-f", "--config-file", required=False, help="Path to the config file", default=None)
 ap.add_argument("-l", "--log-level", type=str, required=False, help="Log level to run this program", default="INFO")
 args = vars(ap.parse_args())
 
 
-def main():
+def main() -> None:
     setup_logger(args["log_level"])
 
     config = Config(args, args["config_file"])
@@ -42,5 +46,5 @@ def main():
     api_caller.post_new_version()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

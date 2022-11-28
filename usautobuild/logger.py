@@ -1,8 +1,9 @@
 import datetime
-import sys
+import logging
 import random
 import re
-import logging
+import sys
+
 from logging import handlers
 from pathlib import Path
 
@@ -24,7 +25,7 @@ def str_to_log_level(s: str) -> int:
     return level_name_map.get(s.upper(), logging.INFO)
 
 
-def setup_logger(arg_level: str):
+def setup_logger(arg_level: str) -> None:
     """Configure basic logging facilities"""
 
     log.setLevel(str_to_log_level(arg_level))
@@ -47,7 +48,7 @@ def setup_logger(arg_level: str):
     log.addHandler(fh)
 
 
-def setup_extra_loggers(config: Config):
+def setup_extra_loggers(config: Config) -> None:
     """Configure complex loggers requiring config"""
 
     discord_webhook = config.discord_webhook
@@ -91,16 +92,16 @@ class DiscordHandler(logging.Handler):
         for key, value in cls.uwu_replacements.items():
             message = re.sub(key, value, message, flags=re.IGNORECASE)
 
-        if random.random() < .8:
+        if random.random() < 0.8:
             message = f"{random.choice(cls.uwu_prefixes)} {message}"
 
-        if random.random() < .8:
+        if random.random() < 0.8:
             message = f"{message} {random.choice(cls.uwu_endings)}"
 
         return message
 
     def send_message(self, message: str, fail: bool = False) -> bool:
-        if random.random() < .1:
+        if random.random() < 0.1:
             message = self.uwuize(message)
 
         wh_data = {

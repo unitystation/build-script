@@ -1,7 +1,6 @@
 from logging import getLogger
 from pathlib import Path
-
-from subprocess import Popen, PIPE
+from subprocess import PIPE, Popen
 
 from .config import Config
 
@@ -16,7 +15,7 @@ class Licenser:
         self.run_command(self.make_command())
         log.info("Process finished satisfactorily")
 
-    def prepare_licenses_folder(self):
+    def prepare_licenses_folder(self) -> None:
         log.debug("Preparing licenses folder...")
         licenses_folder = Path.cwd() / "licenses"
         if not licenses_folder.is_dir():
@@ -35,7 +34,7 @@ class Licenser:
             f"-batchmode -nographics -createManualActivationFile -logfile /root/logs/licenser.txt "
         )
 
-    def run_command(self, command: str):
+    def run_command(self, command: str) -> None:
         log.debug(f"Running command \n{command}\n")
         cmd = Popen(command, stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
 
