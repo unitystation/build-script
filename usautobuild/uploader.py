@@ -13,7 +13,7 @@ class Uploader:
     def __init__(self, config: Config):
         self.config = config
 
-    def upload_to_cdn(self):
+    def upload_to_cdn(self) -> None:
         ftp = FTP()
 
         try:
@@ -39,7 +39,7 @@ class Uploader:
 
         ftp.close()
 
-    def attempt_ftp_upload(self, ftp, target: str, attempt: int = 0):
+    def attempt_ftp_upload(self, ftp: FTP, target: str, attempt: int = 0) -> None:
         try:
             ftp.mkd(f"/unitystation/{self.config.forkname}/{target}/")
         except error_perm:
@@ -64,11 +64,11 @@ class Uploader:
                 log.error(f"Error trying to upload {local_file}")
                 log.error(str(e))
 
-    def zip_build_folder(self, target: str):
+    def zip_build_folder(self, target: str) -> None:
         build_folder = self.config.output_dir / target
-        zip_folder(build_folder, 'zip', build_folder)
+        zip_folder(str(build_folder), "zip", build_folder)
 
-    def start_upload(self):
+    def start_upload(self) -> None:
         log.debug("Starting upload to cdn process...")
 
         for target in self.config.target_platforms:

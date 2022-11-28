@@ -1,5 +1,6 @@
-import requests
 from logging import getLogger
+
+import requests
 
 log = getLogger("usautobuild")
 
@@ -10,11 +11,11 @@ class ApiCaller:
         self.api_key = api_key
         self.build_number = build_number
 
-    def post_new_version(self):
+    def post_new_version(self) -> None:
         data = {
             "version_number": str(self.build_number),
             "date_created": self.version_to_date(str(self.build_number)),
-            "secret_token": self.api_key
+            "secret_token": self.api_key,
         }
 
         response = requests.post(self.api_url, data=data)

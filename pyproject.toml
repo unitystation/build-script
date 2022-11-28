@@ -5,11 +5,65 @@ description = ""
 authors = ["Andrés Riquelme <andresfranco.rs@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.10"
 requests = "^2.25.0"
+gitpython = "^3.1.29"
 
 [tool.poetry.dev-dependencies]
+
+[tool.poetry.group.dev.dependencies]
+black = "^22.10.0"
+mypy = "^0.991"
+flake8 = "^6.0.0"
+flake8-bugbear = "^22.10.27"
+flake8-unused-arguments = "^0.0.12"
+pre-commit = "^2.20.0"
+isort = "^5.10.1"
+types-requests = "^2.28.11.5"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+profile = "black"
+line_length = 121
+atomic = true
+combine_as_imports = true
+lines_between_types = 1
+
+[tool.black]
+target-version = ['py310']
+line_length = 121
+
+[tool.mypy]
+python_version = "3.10"
+
+show_column_numbers = true
+show_error_codes = true
+
+disallow_any_generics = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+disallow_untyped_calls = true
+disallow_subclassing_any = true
+disallow_untyped_decorators = true
+check_untyped_defs = true
+no_implicit_optional = true
+no_implicit_reexport = true
+warn_unused_ignores = true
+warn_return_any = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "git.*",
+]
+implicit_reexport = true
+
+[[tool.mypy.overrides]]
+module = [
+    "tests.*",
+]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
