@@ -63,13 +63,6 @@ implicit_reexport = true
 
 [[tool.mypy.overrides]]
 module = [
-    # https://github.com/encode/uvicorn/issues/998
-    "uvicorn.*",
-]
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = [
     "tests.*",
 ]
 disallow_untyped_defs = false
