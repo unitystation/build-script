@@ -5,11 +5,10 @@ import shutil
 
 from logging import getLogger
 from pathlib import Path
-from subprocess import PIPE, Popen
 
 from .config import Config
 from .exceptions import BuildFailed, InvalidProjectPath, MissingLicenseFile
-from .utils import iterate_output
+from .utils import run_process_shell
 
 exec_name = {
     "linuxserver": "Unitystation",
@@ -166,14 +165,7 @@ class Builder:
         command = self.make_command(target)
         log.debug(f"Running command\n{command}\n")
 
-        with Popen(command, stdout=PIPE, stderr=PIPE, shell=True) as cmd:
-            for line, is_stdout in iterate_output(cmd):
-                if is_stdout:
-                    log.debug(line)
-                else:
-                    log.error(line)
-
-        if cmd.returncode != 0:
+        if run_process_shell(command):
             raise BuildFailed(target)
 
     def start_building(self) -> None:

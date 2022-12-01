@@ -2,9 +2,9 @@ import shutil
 
 from logging import getLogger
 from pathlib import Path
-from subprocess import PIPE, Popen
 
 from .config import Config
+from .utils import run_process_shell
 
 log = getLogger("usautobuild")
 
@@ -33,64 +33,24 @@ class Dockerizer:
 
     def make_images(self) -> None:
         log.debug("Creating images...")
-        try:
-            cmd = Popen(
-                f"docker image prune -f && docker build "
-                f"-t unitystation/unitystation:{self.config.build_number} "
-                f"-t unitystation/unitystation:{self.config.git_branch} Docker",
-                stdout=PIPE,
-                stderr=PIPE,
-                universal_newlines=True,
-                shell=True,
-            )
-            for line in cmd.stdout:
-                log.debug(line)
 
-            for line in cmd.stderr:
-                raise Exception(line)
-
-            cmd.wait()
-        except Exception as e:
-            log.error(str(e))
-            raise e
+        if status := run_process_shell(
+            f"docker image prune -f && docker build "
+            f"-t unitystation/unitystation:{self.config.build_number} "
+            f"-t unitystation/unitystation:{self.config.git_branch} Docker"
+        ):
+            raise Exception(f"Build failed: {status}")
 
     def push_images(self) -> None:
         log.debug("Pushing images...")
-        try:
-            cmd = Popen(
-                f'echo "$DOCKER_PASSWORD" | ' f"docker login --username {self.config.docker_username} --password-stdin",
-                stdout=PIPE,
-                stderr=PIPE,
-                universal_newlines=True,
-                shell=True,
-            )
 
-            for line in cmd.stdout:
-                log.debug(line)
-            # for line in cmd.stderr:
-            #     raise Exception(line)
-            cmd.wait()
-        except Exception as e:
-            log.error(str(e))
-            raise e
+        if status := run_process_shell(
+            f'echo "$DOCKER_PASSWORD" | ' f"docker login --username {self.config.docker_username} --password-stdin",
+        ):
+            raise Exception(f"Docker login failed: {status}")
 
-        try:
-            cmd = Popen(
-                "docker push unitystation/unitystation --all-tags",
-                stdout=PIPE,
-                stderr=PIPE,
-                universal_newlines=True,
-                shell=True,
-            )
-            for line in cmd.stdout:
-                log.debug(line)
-            # for line in cmd.stderr:
-            #     raise Exception(line)
-            cmd.wait()
-
-        except Exception as e:
-            log.error(str(e))
-            raise e
+        if status := run_process_shell("docker push unitystation/unitystation --all-tags"):
+            raise Exception(f"Docker push failed: {status}")
 
     def start_dockering(self) -> None:
         log.debug("Starting docker process")

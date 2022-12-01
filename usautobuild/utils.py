@@ -1,10 +1,34 @@
 import io
+import logging
 import selectors
 import subprocess
 
 from typing import Iterator
 
-__all__ = ("iterate_output",)
+__all__ = (
+    "run_process_shell",
+    "iterate_output",
+)
+
+log = logging.getLogger("usautobuild")
+
+
+def run_process_shell(command: str) -> int:
+    """A simple helper function to run shell program to completion logging output and returning status"""
+
+    with subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=True,
+    ) as cmd:
+        for line, is_stdout in iterate_output(cmd):
+            if is_stdout:
+                log.debug(line)
+            else:
+                log.error(line)
+
+    return cmd.returncode
 
 
 def iterate_output(cmd: subprocess.Popen[bytes]) -> Iterator[tuple[str, bool]]:
