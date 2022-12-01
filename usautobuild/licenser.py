@@ -41,9 +41,8 @@ class Licenser:
         with Popen(command, stdout=PIPE, stderr=PIPE, shell=True) as cmd:
             for line, is_stdout in iterate_output(cmd):
                 if is_stdout:
-                    if line.strip():
-                        log.debug(line)
+                    log.debug(line)
                 else:
-                    if line and "Unable to find image" not in line:
+                    if "Unable to find image" not in line:
                         log.error(line)
                         raise Exception(line)
