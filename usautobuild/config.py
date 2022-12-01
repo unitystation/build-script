@@ -42,7 +42,7 @@ class Config:
     forkname = "UnityStationDevelop"
     output_dir = Path.cwd() / "builds"
     license_file = Path.cwd() / "UnityLicense.ulf"
-    discord_webhook = ""
+    discord_webhook = None
     abort_on_build_fail = True
 
     project_path = Path()
