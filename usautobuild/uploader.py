@@ -52,7 +52,8 @@ class Uploader:
         try:
             with open(local_file, "rb") as zip_file:
                 log.debug(f"Uploading {target}...")
-                ftp.storbinary(f"STOR {upload_path}", zip_file)
+                if not self.config.dry_run:
+                    ftp.storbinary(f"STOR {upload_path}", zip_file)
         except all_errors as e:
             if "timed out" in str(e):
                 if attempt >= self.MAX_UPLOAD_ATTEMPTS:

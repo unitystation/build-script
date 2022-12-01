@@ -186,7 +186,7 @@ class Builder:
             except BuildFailed:
                 if self.config.abort_on_build_fail:
                     log.error(f"Build for {target} failed and config is set to abort on fail!")
-                    raise BuildFailed(target)
+                    raise
             else:
                 log.debug(f"Finished build for {target}")
 
