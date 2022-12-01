@@ -9,6 +9,7 @@ from subprocess import PIPE, Popen
 
 from .config import Config
 from .exceptions import BuildFailed, InvalidProjectPath, MissingLicenseFile
+from .utils import iterate_output
 
 exec_name = {
     "linuxserver": "Unitystation",
@@ -165,16 +166,13 @@ class Builder:
         command = self.make_command(target)
         log.debug(f"Running command\n{command}\n")
 
-        cmd = Popen(command, stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
+        with Popen(command, stdout=PIPE, stderr=PIPE, shell=True) as cmd:
+            for line, is_stdout in iterate_output(cmd):
+                if is_stdout:
+                    log.debug(line)
+                else:
+                    log.error(line)
 
-        for line in cmd.stdout:
-            if line.strip():
-                log.debug(line)
-
-        for line in cmd.stderr:
-            log.error(line)
-
-        cmd.wait()
         if cmd.returncode != 0:
             raise BuildFailed(target)
 

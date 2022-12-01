@@ -37,7 +37,7 @@ class Gitter:
 
     def clone_repo(self, local_dir: Path) -> Repo:
         log.debug("Clonning repository...")
-        return Repo.clone_from(self.remote_repo, local_dir, progress=CloneProgress())
+        return Repo.clone_from(self.remote_repo, local_dir, progress=CloneProgress())  # type: ignore[arg-type]
 
     def update_repo(self) -> None:
         log.debug("Updating repo...")
