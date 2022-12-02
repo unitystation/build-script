@@ -156,21 +156,22 @@ class BufferedDiscordHandler(logging.Handler):
                 # did not get anything during buffer grace period / send interval
                 if not pending_sends:
                     continue
+            else:
+                # magic thread exit sentinel
+                if record is None:
+                    break
+
+                last_pop = time.time()
+                pending_sends.append(
+                    (
+                        self.format(record),
+                        record.levelno >= logging.ERROR,
+                    )
+                )
             finally:
                 # wait forever by default
                 pop_timeout = None
 
-            # magic thread exit sentinel
-            if record is None:
-                break
-
-            last_pop = time.time()
-            pending_sends.append(
-                (
-                    self.format(record),
-                    record.levelno >= logging.ERROR,
-                )
-            )
             message, malf = pending_sends.popleft()
 
             # a hatch indicating current chunk is at message length limit or next chunk has other type
