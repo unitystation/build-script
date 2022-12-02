@@ -6,8 +6,7 @@ class BaseException(Exception):
 
 
 class InvalidConfigFile(BaseException):
-    def __init__(self) -> None:
-        super().__init__("The config file seems to be an invalid JSON file.")
+    ...
 
 
 class NoChanges(BaseException):

@@ -12,7 +12,12 @@ from .exceptions import InvalidConfigFile
 log = getLogger("usautobuild")
 
 
-_UNSET = object()
+class _UnsetClass:
+    def __repr__(self) -> str:
+        return "<UNSET>"
+
+
+_UNSET = _UnsetClass()
 
 
 class Variable:
@@ -53,15 +58,7 @@ class Variable:
 
         # special handling for env syntax, make sure we are not touching default
         if env in os.environ:
-            value = os.environ[env]
-
-            if type_ is bool:
-                if value.lower() in ("0", "no", "off", "disable", "false"):
-                    value = False
-                else:
-                    value = True
-            elif type_ is list:
-                value = value.split(",")
+            value = self.convert_env(os.environ[env], type_)
 
         if (config := self.config) is None:
             config = name
@@ -77,26 +74,53 @@ class Variable:
             raise ValueError(f"Missing required config value {name} / {env}")
 
         if typing.get_origin(type_) is Union:
-            union_args = typing.get_args(type_)
-
-            if type(value) not in union_args:
-                errors = []
-                for tp in union_args:
-                    try:
-                        return tp(value)
-                    except Exception as e:
-                        errors.append(e)
-
-                    raise ValueError(
-                        f"Unable to convert {name} / {env} to any of union types: {' '.join(map(str, errors))}"
-                    )
-
-            return value
+            try:
+                return self.convert_from_union(value, type_)
+            except Exception as e:
+                raise ValueError(f"Unable to convert {name} / {env} to any of union types: {e}")
 
         if type(value) is not type_:
             return type_(value)
 
         return value
+
+    @staticmethod
+    def convert_env(value: str, type_: Any) -> Any:
+        if type_ is bool:
+            if value.lower() in ("0", "no", "off", "disable", "false"):
+                return False
+            else:
+                return True
+
+        if type_ is list:
+            return value.split(",")
+
+        return value
+
+    @staticmethod
+    def convert_from_union(value: Any, type_: Union[Any]) -> Any:
+        union_args = typing.get_args(type_)
+
+        if type(value) not in union_args:
+            # TODO: exception group when at 3.11
+            errors = []
+            for tp in union_args:
+                try:
+                    return tp(value)
+                except Exception as e:
+                    errors.append(e)
+
+                raise ValueError(" ".join(map(str, errors)))
+
+        return value
+
+    def __repr__(self) -> str:
+        fields = [type(self).__name__]
+        for var in self.__slots__:
+            if (value := getattr(self, var)) is not None:
+                fields.append(f"{var}={value}")
+
+        return f"<{' '.join(fields)}>"
 
 
 T = TypeVar("T")
@@ -107,13 +131,13 @@ def Var(default: T = _UNSET, *args: Any, **kwargs: Any) -> T:  # type: ignore[as
 
 
 class Config:
-    cdn_host: str = Var()
-    cdn_user: str = Var()
-    cdn_password: str = Var()
-    docker_password: str = Var()
-    docker_username: str = Var()
-    changelog_api_url: str = Var()
-    changelog_api_key: str = Var()
+    cdn_host: str
+    cdn_user: str
+    cdn_password: str
+    docker_password: str
+    docker_username: str
+    changelog_api_url: str
+    changelog_api_key: str
 
     git_url = Var("https://github.com/unitystation/unitystation.git")
     git_branch = Var("develop")
@@ -139,35 +163,50 @@ class Config:
         # filter None and False (from store_true) values which break defaults handling
         args = {k: v for k, v in args.items() if v not in (None, False)}
 
-        config_file = args["config_file"]
+        self.resolve_vars(args, self.read_config(args["config_file"]))
 
+    @staticmethod
+    def read_config(config_file: Path) -> dict[str, Any]:
         if not config_file.is_file():
             log.info("No config file found, we will proceed with all default")
-            config = {}
-        else:
-            try:
-                with open(args["config_file"]) as f:
-                    config = json.load(f)
-            except json.JSONDecodeError:
-                log.error("JSON config file seems to be invalid!")
-                raise InvalidConfigFile
 
+            return {}
+
+        try:
+            with open(config_file) as f:
+                config = json.load(f)
+        except json.JSONDecodeError:
+            raise InvalidConfigFile("JSON config file seems to be invalid!")
+
+        if not isinstance(config, dict):
+            raise InvalidConfigFile("Config is not a mapping")
+
+        return config
+
+    def resolve_vars(self, args: dict[str, Any], config: dict[str, Any]) -> None:
+        # get vaiables with annotations:
+        # foo: int
+        # foo: int = Var(...)
         type_hints = typing.get_type_hints(type(self))
 
-        for name in vars(type(self)):
-            if name.startswith("_"):
+        # fill variables without annotations:
+        # foo = Var(int, ...)
+        for name, value in vars(type(self)).items():
+            if not isinstance(value, Variable):
                 continue
 
             if name not in type_hints:
                 type_hints[name] = None
 
         for name, type_ in type_hints.items():
-            var: Variable = getattr(self, name)
+            # default for cases where Var is omitted:
+            # foo: int
+            var: Variable = getattr(self, name, Variable())
 
             try:
                 setattr(self, name, var.resolve(name, type_, args, config))
             except Exception:
-                log.exception("resolving %s to %s of type %s", name, var, type_)
+                log.error("resolving %s to %s of type %s", name, var, type_)
 
                 raise
 
