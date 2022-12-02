@@ -12,8 +12,13 @@ class ApiCaller:
         self.api_url = config.changelog_api_url
         self.api_key = config.changelog_api_key
         self.build_number = config.build_number
+        self.dry_run = config.dry_run
 
     def post_new_version(self) -> None:
+        if self.dry_run:
+            log.info("Dry run, skipping Changelog API call")
+            return
+
         data = {
             "version_number": str(self.build_number),
             "date_created": self.version_to_date(str(self.build_number)),
