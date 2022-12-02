@@ -67,7 +67,11 @@ class Variable:
             config = name
 
         value = cfg.get(config, value)
-        value = args.get(config, value)
+
+        if (arg := self.arg) is None:
+            arg = name
+
+        value = args.get(arg, value)
 
         if value is _UNSET:
             raise ValueError(f"Missing required config value {name} / {env}")
