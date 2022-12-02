@@ -17,10 +17,6 @@ class CloneProgress(RemoteProgress):
 
 
 class Gitter:
-    remote_repo: str
-    local_repo: Repo
-    branch: str
-
     def __init__(self, config: Config):
         self.config = config
 
@@ -37,7 +33,7 @@ class Gitter:
 
     def clone_repo(self, local_dir: Path) -> Repo:
         log.debug("Clonning repository...")
-        return Repo.clone_from(self.remote_repo, local_dir, progress=CloneProgress())  # type: ignore[arg-type]
+        return Repo.clone_from(self.config.git_url, local_dir, progress=CloneProgress())  # type: ignore[arg-type]
 
     def update_repo(self) -> None:
         log.debug("Updating repo...")
@@ -48,7 +44,7 @@ class Gitter:
 
         if last_commit == new_commit and not self.config.allow_no_changes:
             log.error("Couldn't find changes after updating repo. Aborting build!")
-            raise NoChanges(self.branch)
+            raise NoChanges(self.config.git_branch)
 
     def start_gitting(self) -> None:
         self.prepare_git_directory()

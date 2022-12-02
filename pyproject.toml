@@ -9,8 +9,6 @@ python = "^3.10"
 requests = "^2.25.0"
 gitpython = "^3.1.29"
 
-[tool.poetry.dev-dependencies]
-
 [tool.poetry.group.dev.dependencies]
 black = "^22.10.0"
 mypy = "^0.991"
@@ -20,6 +18,8 @@ flake8-unused-arguments = "^0.0.12"
 pre-commit = "^2.20.0"
 isort = "^5.10.1"
 types-requests = "^2.28.11.5"
+pytest = "^7.2.0"
+pytest-cov = "^4.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -63,9 +63,25 @@ implicit_reexport = true
 
 [[tool.mypy.overrides]]
 module = [
+    "tests.test_builder.*",
+]
+# old tests are broken now
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = [
     "tests.*",
 ]
-# tests are broken now
-ignore_errors = true
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
+
+[tool.coverage.report]
+omit = [
+    "tests/*",
+]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if __name__ == .__main__.:",
+    "\\.\\.\\.",
+]

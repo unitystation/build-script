@@ -41,3 +41,4 @@ repos:
         additional_dependencies:
           - types-requests
           - gitpython
+          - pytest

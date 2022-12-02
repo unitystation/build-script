@@ -1,3 +1,4 @@
+import argparse
 import collections
 import datetime
 import logging
@@ -18,22 +19,33 @@ from .config import Config
 
 log = logging.getLogger("usautobuild")
 
+__all__ = (
+    "LogLevel",
+    "setup_logger",
+    "setup_extra_loggers",
+)
 
-def str_to_log_level(s: str) -> int:
-    level_name_map = {
+
+class LogLevel:
+    LEVELS = {
         "DEBUG": logging.DEBUG,
         "INFO": logging.INFO,
         "WARNING": logging.WARNING,
         "ERROR": logging.ERROR,
+        "CRITICAL": logging.CRITICAL,
     }
 
-    return level_name_map.get(s.upper(), logging.INFO)
+    def __call__(self, s: str) -> int:
+        if (level := self.LEVELS.get(s.upper())) is None:
+            raise argparse.ArgumentTypeError(f"Invalid logging level, expected one of {', '.join(self.LEVELS.keys())}")
+
+        return level
 
 
-def setup_logger(arg_level: str) -> None:
+def setup_logger(level: int) -> None:
     """Configure basic logging facilities"""
 
-    log.setLevel(str_to_log_level(arg_level))
+    log.setLevel(level)
 
     fmt = logging.Formatter("[%(asctime)s::%(name)s::%(levelname)s] %(message)s")
 

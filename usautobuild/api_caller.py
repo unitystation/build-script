@@ -2,14 +2,16 @@ from logging import getLogger
 
 import requests
 
+from .config import Config
+
 log = getLogger("usautobuild")
 
 
 class ApiCaller:
-    def __init__(self, api_url: str, api_key: str, build_number: int):
-        self.api_url = api_url
-        self.api_key = api_key
-        self.build_number = build_number
+    def __init__(self, config: Config):
+        self.api_url = config.changelog_api_url
+        self.api_key = config.changelog_api_key
+        self.build_number = config.build_number
 
     def post_new_version(self) -> None:
         data = {
@@ -26,7 +28,8 @@ class ApiCaller:
             log.error(response.json())
             raise
 
-    def version_to_date(self, version: str) -> str:
+    @staticmethod
+    def version_to_date(version: str) -> str:
         year = version[0:2]
         month = version[2:4]
         day = version[4:6]
