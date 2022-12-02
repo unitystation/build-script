@@ -52,8 +52,7 @@ class Uploader:
         try:
             with open(local_file, "rb") as zip_file:
                 log.debug(f"Uploading {target}...")
-                if not self.config.dry_run:
-                    ftp.storbinary(f"STOR {upload_path}", zip_file)
+                ftp.storbinary(f"STOR {upload_path}", zip_file)
         except all_errors as e:
             if "timed out" in str(e):
                 if attempt >= self.MAX_UPLOAD_ATTEMPTS:
@@ -70,6 +69,9 @@ class Uploader:
         zip_folder(str(build_folder), "zip", build_folder)
 
     def start_upload(self) -> None:
+        if self.config.dry_run:
+            log.info("Dry run, skipping upload")
+            return
         log.debug("Starting upload to cdn process...")
 
         for target in self.config.target_platforms:

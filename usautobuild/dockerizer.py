@@ -53,6 +53,9 @@ class Dockerizer:
             raise Exception(f"Docker push failed: {status}")
 
     def start_dockering(self) -> None:
+        if self.config.dry_run:
+            log.info("Dry run, skipping dockerization")
+            return
         log.debug("Starting docker process")
         self.copy_dockerfile()
         self.copy_server_build()
