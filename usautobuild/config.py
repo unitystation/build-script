@@ -10,6 +10,8 @@ from typing import Any, Optional, TypeVar, Union
 
 from .exceptions import InvalidConfigFile
 
+__all__ = ("Config",)
+
 log = getLogger("usautobuild")
 
 
@@ -22,6 +24,12 @@ _UNSET = _UnsetClass()
 
 
 class Variable:
+    """
+    Represents a single variable in config.
+
+    Arguments include default value (of final type), type override and custom names for CLI argument, config and env
+    """
+
     __slots__ = (
         "default",
         "type_",
@@ -93,7 +101,7 @@ class Variable:
             else:
                 return True
 
-        if type_ is list:
+        if isinstance(type_, (list, tuple)):
             return value.split(",")
 
         return value
@@ -128,6 +136,8 @@ T = TypeVar("T")
 
 
 def Var(default: T = _UNSET, *args: Any, **kwargs: Any) -> T:  # type: ignore[assignment]
+    """A helper function to assign Variable and forward default type"""
+
     return Variable(default, *args, **kwargs)  # type: ignore[return-value]
 
 
