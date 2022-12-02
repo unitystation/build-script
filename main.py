@@ -8,7 +8,7 @@ from usautobuild.config import Config
 from usautobuild.dockerizer import Dockerizer
 from usautobuild.gitter import Gitter
 from usautobuild.licenser import Licenser
-from usautobuild.logger import LogLevel, setup_extra_loggers, setup_logger
+from usautobuild.logger import LogLevel, setup_extra_loggers, setup_logger, teardown_loggers
 from usautobuild.uploader import Uploader
 
 _default_config_path = Path("config.json")
@@ -74,4 +74,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    finally:
+        teardown_loggers()

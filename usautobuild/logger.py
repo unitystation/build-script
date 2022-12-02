@@ -23,6 +23,7 @@ __all__ = (
     "LogLevel",
     "setup_logger",
     "setup_extra_loggers",
+    "teardown_loggers",
 )
 
 
@@ -65,14 +66,24 @@ def setup_logger(level: int) -> None:
     log.addHandler(fh)
 
 
+_discord_logger = None
+
+
 def setup_extra_loggers(config: Config) -> None:
     """Configure complex loggers requiring config"""
 
     if (discord_webhook := config.discord_webhook) is not None:
-        handler = BufferedDiscordHandler(discord_webhook)
-        handler.setFormatter(MaybeUwUFormatter())
-        handler.setLevel(logging.INFO)
-        log.addHandler(handler)
+        global _discord_logger
+
+        _discord_logger = BufferedDiscordHandler(discord_webhook)
+        _discord_logger.setFormatter(MaybeUwUFormatter())
+        _discord_logger.setLevel(logging.INFO)
+        log.addHandler(_discord_logger)
+
+
+def teardown_loggers() -> None:
+    if _discord_logger is not None:
+        _discord_logger.stop()
 
 
 class MaybeUwUFormatter(logging.Formatter):
@@ -128,9 +139,9 @@ class BufferedDiscordHandler(logging.Handler):
     """
 
     # minimum time between 2 webhooks
-    MIN_SEND_INTERVAL = 1.0
+    MIN_SEND_INTERVAL = 0.5
     # wait this long for additional messages to merge into one batch
-    BUFFER_GRACE_TIME = 0.5
+    BUFFER_GRACE_TIME = 0.2
 
     DISCORD_MESSAGE_LEN_LIMIT = 2000
 
@@ -144,6 +155,9 @@ class BufferedDiscordHandler(logging.Handler):
         self._thread.start()
 
     def _handler_loop(self) -> None:
+        # indicating magic value was consumed and we are exiting
+        flushing = False
+
         pending_sends: collections.deque[tuple[str, bool]] = collections.deque()
 
         pop_timeout: Optional[float] = None
@@ -151,7 +165,10 @@ class BufferedDiscordHandler(logging.Handler):
 
         while True:
             try:
-                record = self._queue.get(timeout=pop_timeout)
+                if flushing:
+                    time.sleep(pop_timeout or 0)
+                else:
+                    record = self._queue.get(timeout=pop_timeout)
             except queue.Empty:
                 # did not get anything during buffer grace period / send interval
                 if not pending_sends:
@@ -159,15 +176,15 @@ class BufferedDiscordHandler(logging.Handler):
             else:
                 # magic thread exit sentinel
                 if record is None:
-                    break
-
-                last_pop = time.time()
-                pending_sends.append(
-                    (
-                        self.format(record),
-                        record.levelno >= logging.ERROR,
+                    flushing = True
+                else:
+                    last_pop = time.time()
+                    pending_sends.append(
+                        (
+                            self.format(record),
+                            record.levelno >= logging.ERROR,
+                        )
                     )
-                )
             finally:
                 # wait forever by default
                 pop_timeout = None
