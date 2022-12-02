@@ -1,3 +1,4 @@
+import inspect
 import json
 import os
 import typing
@@ -139,25 +140,25 @@ class Config:
     changelog_api_url: str
     changelog_api_key: str
 
-    git_url = Var("https://github.com/unitystation/unitystation.git")
-    git_branch = Var("develop")
+    git_url = "https://github.com/unitystation/unitystation.git"
+    git_branch = "develop"
 
-    unity_version = Var("2020.1.17f1")
-    target_platforms = Var(["linuxserver", "StandaloneWindows64", "StandaloneOSX", "StandaloneLinux64"])
-    cdn_download_url = Var("https://unitystationfile.b-cdn.net/{}/{}/{}.zip")
-    forkname = Var("UnityStationDevelop")
+    unity_version = "2020.1.17f1"
+    target_platforms = ["linuxserver", "StandaloneWindows64", "StandaloneOSX", "StandaloneLinux64"]
+    cdn_download_url = "https://unitystationfile.b-cdn.net/{}/{}/{}.zip"
+    forkname = "UnityStationDevelop"
 
-    discord_webhook: Optional[str] = Var(None)
+    discord_webhook: Optional[str] = None
 
-    dry_run = Var(False)
-    abort_on_build_fail = Var(True)
-    allow_no_changes = Var(True)
+    dry_run = False
+    abort_on_build_fail = True
+    allow_no_changes = True
 
-    build_number = Var(0)
+    build_number = 0
 
-    output_dir = Var(Path.cwd() / "builds")
-    license_file = Var(Path.cwd() / "UnityLicense.ulf")
-    project_path = Var(Path())
+    output_dir = Path.cwd() / "builds"
+    license_file = Path.cwd() / "UnityLicense.ulf"
+    project_path = Path()
 
     def __init__(self, args: dict[str, Any]):
         # filter None and False (from store_true) values which break defaults handling
@@ -191,8 +192,12 @@ class Config:
 
         # fill variables without annotations:
         # foo = Var(int, ...)
-        for name, value in vars(type(self)).items():
-            if not isinstance(value, Variable):
+        # foo = 1
+        for name, value in inspect.getmembers(type(self)):
+            if name.startswith("_"):
+                continue
+
+            if inspect.isfunction(value) or inspect.isdatadescriptor(value):
                 continue
 
             if name not in type_hints:
@@ -201,7 +206,12 @@ class Config:
         for name, type_ in type_hints.items():
             # default for cases where Var is omitted:
             # foo: int
-            var: Variable = getattr(self, name, Variable())
+            var: Any = getattr(self, name, Variable())
+            # variables with simple default:
+            # foo = 1
+            # foo: int = 1
+            if not isinstance(var, Variable):
+                var = Variable(var)
 
             try:
                 setattr(self, name, var.resolve(name, type_, args, config))

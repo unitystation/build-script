@@ -11,6 +11,8 @@ from usautobuild.licenser import Licenser
 from usautobuild.logger import LogLevel, setup_extra_loggers, setup_logger
 from usautobuild.uploader import Uploader
 
+_default_config_path = Path("config.json")
+
 ap = argparse.ArgumentParser()
 ap.add_argument(
     "-b",
@@ -23,20 +25,20 @@ ap.add_argument(
     "-gl",
     "--get-license",
     action="store_true",
-    help="If set to true, it will ignore all other procedure and just create a license file",
+    help="Get license file and quit",
 )
 ap.add_argument(
     "-f",
     "--config-file",
     type=Path,
-    help="Path to the config file",
-    default=Path("config.json"),
+    help=f"Path to the config file, defaults to {_default_config_path}",
+    default=_default_config_path,
 )
 ap.add_argument(
     "-l",
     "--log-level",
     type=LogLevel(),
-    help="Log level to run this program",
+    help="Logging level, defaults to info",
     default="INFO",
 )
 ap.add_argument(
