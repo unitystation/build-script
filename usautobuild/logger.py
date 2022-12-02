@@ -176,6 +176,9 @@ class BufferedDiscordHandler(logging.Handler):
             else:
                 # magic thread exit sentinel
                 if record is None:
+                    if not pending_sends:
+                        break
+
                     flushing = True
                 else:
                     last_pop = time.time()
