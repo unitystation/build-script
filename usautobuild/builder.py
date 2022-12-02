@@ -32,8 +32,11 @@ class Builder:
         self.config = config
 
     def produce_build_number(self) -> None:
-        log.debug("Producing build number...")
-        self.config.build_number = int(datetime.datetime.now().strftime("%y%m%d%H"))
+        if self.config.build_number is None:
+            log.debug("Producing build number...")
+            self.config.build_number = int(datetime.datetime.now().strftime("%y%m%d%H"))
+        else:
+            log.debug("Build number is set manually")
 
     def check_license(self) -> None:
         log.debug("Checking license file...")
