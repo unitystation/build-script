@@ -72,7 +72,7 @@ def test_variable_env_parser_type_tuple_str():
     assert Variable.convert_env(",,,,", tuple[str, str, str, str]) == ["", "", "", "", ""]  # type: ignore[misc]
 
     with pytest.raises(ValueError):
-        assert Variable.convert_env(",,,,", tuple[str]) == ["", "", "", "", ""]
+        Variable.convert_env("3,4,5", tuple[str])
 
 
 @pytest.mark.xfail(reason="non str iterables are not yet implemented")
