@@ -29,7 +29,7 @@ class Config(ConfigBase):
     abort_on_build_fail = True
     allow_no_changes = True
 
-    build_number = 0
+    build_number: Optional[int] = None
 
     output_dir = Path.cwd() / "builds"
     license_file = Path.cwd() / "UnityLicense.ulf"
