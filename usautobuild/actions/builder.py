@@ -5,9 +5,9 @@ import shutil
 from logging import getLogger
 from pathlib import Path
 
-from .config import Config
-from .exceptions import BuildFailed, InvalidProjectPath, MissingLicenseFile
-from .utils import run_process_shell
+from usautobuild.config import Config
+from usautobuild.exceptions import BuildFailed, InvalidProjectPath, MissingLicenseFile
+from usautobuild.utils import run_process_shell
 
 exec_name = {
     "linuxserver": "Unitystation",

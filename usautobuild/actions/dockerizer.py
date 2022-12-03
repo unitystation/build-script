@@ -3,8 +3,8 @@ import shutil
 from logging import getLogger
 from pathlib import Path
 
-from .config import Config
-from .utils import run_process_shell
+from usautobuild.config import Config
+from usautobuild.utils import run_process_shell
 
 log = getLogger("usautobuild")
 

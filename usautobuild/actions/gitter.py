@@ -4,8 +4,8 @@ from typing import Any
 
 from git import RemoteProgress, Repo
 
-from .config import Config
-from .exceptions import NoChanges
+from usautobuild.config import Config
+from usautobuild.exceptions import NoChanges
 
 log = getLogger("usautobuild")
 
