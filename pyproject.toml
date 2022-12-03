@@ -63,13 +63,6 @@ implicit_reexport = true
 
 [[tool.mypy.overrides]]
 module = [
-    "tests.test_builder.*",
-]
-# old tests are broken now
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = [
     "tests.*",
 ]
 disallow_untyped_defs = false

@@ -1,6 +1,6 @@
 import os
 
-from typing import Optional, Union
+from typing import Any, Optional, Union
 from unittest import mock
 
 import pytest
@@ -32,6 +32,17 @@ def test_var_returns_variable():
     assert var.env == env
 
 
+def test_variable_guess():
+    assert Variable.guess_type_from_default(1) is int
+
+
+def test_variable_guess_expects_default_or_type():
+    var = Variable()
+
+    with pytest.raises(TypeAnnotationNeeded):
+        var.resolve("", {}, {})
+
+
 def test_variable_env_name():
     var = Variable()
 
@@ -45,12 +56,9 @@ def test_variable_env_name_uses_overwrite():
     assert var.env_name("foo") == "lowercase-foo"
 
 
-def test_variable_convert_env_unknown():
-    value = "test string, hello"
-
-    result = Variable.convert_env(value, object)
-
-    assert result == value
+def test_variable_convert_env_invalid():
+    with pytest.raises(VariableInvalid):
+        Variable.convert_env("25", object)
 
 
 def test_variable_convert_env_bool():
@@ -94,6 +102,19 @@ def test_variable_convert_env_list_non_str():
     assert Variable.convert_env("3", tuple[int]) == [3]
 
 
+def test_variable_convert_env_callable():
+    def typed(value: Any) -> int:
+        return int(value) * 2
+
+    class Typed:
+        def __call__(self, value: Any) -> int:
+            return int(value) * 4
+
+    assert Variable.convert_env("2", typed) == 4
+    assert Variable.convert_env("2", Typed()) == 8
+    assert Variable.convert_env("2", lambda value: int(value) * 8) == 16
+
+
 def test_variable_convert_non_env_invalid():
     with pytest.raises(VariableInvalid):
         Variable.convert_non_env("definitely not int", int)
@@ -122,6 +143,19 @@ def test_variable_convert_non_env_union():
 def test_variable_convert_non_env_no_valid_options():
     with pytest.raises(VariableInvalid, match="convert to any of union types"):
         Variable.convert_non_env("test", int | float)
+
+
+def test_variable_convert_non_env_callable():
+    def typed(value: Any) -> int:
+        return int(value) * 2
+
+    class Typed:
+        def __call__(self, value: Any) -> int:
+            return int(value) * 4
+
+    assert Variable.convert_non_env("2", typed) == 4
+    assert Variable.convert_non_env("2", Typed()) == 8
+    assert Variable.convert_non_env("2", lambda value: int(value) * 8) == 16
 
 
 def test_variable_fetch_prefers_nothing_over_segfault():
@@ -179,13 +213,6 @@ def test_variable_fetch_prefers_cli_over_everything():
     assert value == "42"
 
 
-def test_variable_resolve_expects_default_or_type():
-    var = Variable()
-
-    with pytest.raises(TypeAnnotationNeeded):
-        var.resolve("name", {}, {})
-
-
 def test_variable_resolve_adds_more_context_to_errors():
     name = "var_name"
     var = Variable()
@@ -208,14 +235,8 @@ def test_variable_resolve_prefers_its_own_type():
     assert var.resolve("var", {}, {"var": "2"}, float) == 2
 
 
-def test_variable_resolve_gets_type_from_default():
-    var = Variable(1)
-
-    assert var.resolve("name", {"name": "2"}, {}) == 2
-
-
 @mock.patch.dict(os.environ, {"FOO": "42"})
-def test_variable_resolve_gets_resolves_env():
+def test_variable_resolve_resolves_env():
     var = Variable()
 
     assert var.resolve("foo", {}, {}, int) == 42
