@@ -2,6 +2,7 @@ import io
 import logging
 import selectors
 import subprocess
+import sys
 
 from typing import Iterator
 
@@ -38,6 +39,18 @@ def iterate_output(cmd: subprocess.Popen[bytes]) -> Iterator[tuple[str, bool]]:
 
     stdout: io.BufferedReader = cmd.stdout  # type: ignore[assignment]
     stderr: io.BufferedReader = cmd.stderr  # type: ignore[assignment]
+
+    # windows does not work with selectors because there are no pipes on windows
+    # https://docs.python.org/3/library/select.html
+    # emulate old sequential behaviour: all stdout then all stderr
+    if sys.platform in ("win32", "cygwin"):
+        for win_line in stdout:
+            yield win_line.decode(), True
+
+        for win_line in stderr:
+            yield win_line.decode(), False
+
+        return
 
     sel = selectors.DefaultSelector()
 
