@@ -2,14 +2,9 @@ import argparse
 
 from pathlib import Path
 
-from usautobuild.api_caller import ApiCaller
-from usautobuild.builder import Builder
+from usautobuild.actions import ApiCaller, Builder, Dockerizer, Gitter, Licenser, Uploader
 from usautobuild.config import Config
-from usautobuild.dockerizer import Dockerizer
-from usautobuild.gitter import Gitter
-from usautobuild.licenser import Licenser
 from usautobuild.logger import LogLevel, setup_extra_loggers, setup_logger, teardown_loggers
-from usautobuild.uploader import Uploader
 
 _default_config_path = Path("config.json")
 
