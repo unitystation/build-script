@@ -1,4 +1,3 @@
-import datetime
 import json
 import re
 import shutil
@@ -30,13 +29,6 @@ log = getLogger("usautobuild")
 class Builder:
     def __init__(self, config: Config):
         self.config = config
-
-    def produce_build_number(self) -> None:
-        if self.config.build_number is None:
-            log.debug("Producing build number...")
-            self.config.build_number = int(datetime.datetime.now().strftime("%y%m%d%H"))
-        else:
-            log.debug("Build number is set manually")
 
     def check_license(self) -> None:
         log.debug("Checking license file...")
@@ -175,7 +167,6 @@ class Builder:
         log.info("Starting a new build!")
 
         self.check_license()
-        self.produce_build_number()
         self.clean_builds_folder()
         self.create_builds_folders()
         self.set_jsons_data()

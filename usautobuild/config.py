@@ -1,3 +1,5 @@
+import datetime
+
 from pathlib import Path
 from typing import Optional
 
@@ -29,7 +31,7 @@ class Config(ConfigBase):
     abort_on_build_fail = True
     allow_no_changes = True
 
-    build_number: Optional[int] = None
+    build_number = int(datetime.datetime.now().strftime("%y%m%d%H"))
 
     output_dir = Path.cwd() / "builds"
     license_file = Path.cwd() / "UnityLicense.ulf"

@@ -116,10 +116,7 @@ class Variable:
             type_ = self.type_
 
         if type_ is _UNSET:
-            if self.default is _UNSET:
-                raise TypeAnnotationNeeded
-
-            type_ = type(self.default)
+            type_ = self.guess_type_from_default(self.default)
 
         value, from_env = self.fetch_value(name, args, cfg)
 
@@ -134,6 +131,25 @@ class Variable:
             os.environ[self.env_name(name)] = str(value)
 
         return converted_value
+
+    @staticmethod
+    def guess_type_from_default(default: Any) -> Any:
+        """Best effort type guess from default"""
+
+        if default is _UNSET:
+            raise TypeAnnotationNeeded
+
+        if inspect.isclass(default):
+            return default
+
+        if callable(default):
+            signature = inspect.signature(default, eval_str=True)
+            if (return_annotation := signature.return_annotation) == inspect.Signature.empty:
+                raise TypeAnnotationNeeded("Need type annotation as default callable is untyped")
+
+            return return_annotation
+
+        return type(default)
 
     def fetch_value(self, name: str, args: Mapping[str, Any], cfg: dict[str, Any]) -> tuple[Any, bool]:
         """
@@ -180,16 +196,16 @@ class Variable:
             else:
                 return True
 
-        if issubclass(type_, (int, float)):
-            return type_(value)
-
-        if typing.get_origin(type_) in (list, tuple) or issubclass(type_, (list, tuple)):
+        if inspect.isclass(type_) and (typing.get_origin(type_) in (list, tuple) or issubclass(type_, (list, tuple))):
             if not value:
                 return []
 
             return value.split(",")
 
-        return value
+        try:
+            return type_(value)
+        except Exception as e:
+            raise VariableInvalid(str(e))
 
     @classmethod
     def convert_non_env(cls, value: Any, type_: Any) -> Any:
@@ -290,7 +306,7 @@ class ConfigBase:
             if name.startswith("_"):
                 continue
 
-            if inspect.isfunction(value) or inspect.isdatadescriptor(value):
+            if inspect.isfunction(value) or inspect.isdatadescriptor(value) or inspect.ismethod(value):
                 continue
 
             if name not in variables:
