@@ -47,39 +47,6 @@ def test_variable_guess_expects_default_or_type():
         var.resolve("", {}, {})
 
 
-def test_variable_guess_lambda():
-    with pytest.raises(TypeAnnotationNeeded):
-        Variable.guess_type_from_default(lambda: 8080)
-
-
-def test_variable_guess_function():
-    def untyped(_):
-        return 17
-
-    def typed(_: Any) -> int:
-        return 18
-
-    with pytest.raises(TypeAnnotationNeeded):
-        Variable.guess_type_from_default(untyped)
-
-    assert Variable.guess_type_from_default(typed) is int
-
-
-def test_variable_guess_callable_class():
-    class Untyped:
-        def __call__(self, _):
-            return 19
-
-    class Typed:
-        def __call__(self, _) -> int:
-            return 20
-
-    with pytest.raises(TypeAnnotationNeeded):
-        Variable.guess_type_from_default(Untyped())
-
-    assert Variable.guess_type_from_default(Typed()) is int
-
-
 def test_variable_env_name():
     var = Variable()
 

@@ -142,13 +142,6 @@ class Variable:
         if inspect.isclass(default):
             return default
 
-        if callable(default):
-            signature = inspect.signature(default, eval_str=True)
-            if (return_annotation := signature.return_annotation) == inspect.Signature.empty:
-                raise TypeAnnotationNeeded("Need type annotation as default callable is untyped")
-
-            return return_annotation
-
         return type(default)
 
     def fetch_value(self, name: str, args: Mapping[str, Any], cfg: dict[str, Any]) -> tuple[Any, bool]:
