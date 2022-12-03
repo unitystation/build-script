@@ -139,9 +139,6 @@ class Variable:
         if default is _UNSET:
             raise TypeAnnotationNeeded
 
-        if inspect.isclass(default):
-            return default
-
         return type(default)
 
     def fetch_value(self, name: str, args: Mapping[str, Any], cfg: dict[str, Any]) -> tuple[Any, bool]:

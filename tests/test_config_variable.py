@@ -32,12 +32,8 @@ def test_var_returns_variable():
     assert var.env == env
 
 
-def test_variable_guess_instance():
+def test_variable_guess():
     assert Variable.guess_type_from_default(1) is int
-
-
-def test_variable_guess_type():
-    assert Variable.guess_type_from_default(float) is float
 
 
 def test_variable_guess_expects_default_or_type():
