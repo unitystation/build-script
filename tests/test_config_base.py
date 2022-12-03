@@ -6,7 +6,7 @@ from unittest import mock
 
 import pytest
 
-from usautobuild.config_base import ConfigBase, Var
+from usautobuild.config_base import ConfigBase, Var, VariableMissing
 from usautobuild.exceptions import InvalidConfigFile
 
 
@@ -98,7 +98,7 @@ def test_config_variable_missing():
     class Config(ConfigBase):
         a: int
 
-    with pytest.raises(ValueError, match="Missing required"):
+    with pytest.raises(VariableMissing):
         Config({"config_file": Path(".")})
 
 

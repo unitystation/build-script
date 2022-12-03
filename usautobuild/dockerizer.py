@@ -45,7 +45,7 @@ class Dockerizer:
         log.debug("Pushing images...")
 
         if status := run_process_shell(
-            f'echo "$DOCKER_PASSWORD" | ' f"docker login --username {self.config.docker_username} --password-stdin",
+            'echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin',
         ):
             raise Exception(f"Docker login failed: {status}")
 

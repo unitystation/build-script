@@ -11,7 +11,13 @@ from typing import Any, Optional, TypeVar, Union
 
 from .exceptions import InvalidConfigFile
 
-__all__ = ("ConfigBase",)
+__all__ = (
+    "ConfigBase",
+    "BaseConversionException",
+    "TypeAnnotationNeeded",
+    "VariableMissing",
+    "VariableInvalid",
+)
 
 log = getLogger("usautobuild")
 
@@ -22,6 +28,43 @@ class _UnsetClass:
 
 
 _UNSET = _UnsetClass()
+
+
+class BaseConversionException(Exception):
+    __slots__ = (
+        "var",
+        "message",
+        "name",
+    )
+
+    def __init__(self, message: str):
+        self.message = message
+
+        self.var: Optional[Variable] = None
+        self.name: Optional[str] = None
+
+    def __str__(self) -> str:
+        if (name := self.name) is not None and (var := self.var) is not None:
+            prefix = f"[{var.env_name(name)} / {name}] "
+        else:
+            prefix = ""
+
+        return f"{prefix}{self.message}"
+
+
+class TypeAnnotationNeeded(BaseConversionException):
+    def __init__(self, message: str = "Need type annotation as there is no default value"):
+        super().__init__(message)
+
+
+class VariableMissing(BaseConversionException):
+    def __init__(self, message: str = "Missing required value"):
+        super().__init__(message)
+
+
+class VariableInvalid(BaseConversionException):
+    def __init__(self, message: str = "Bad value"):
+        super().__init__(message)
 
 
 class Variable:
@@ -37,67 +80,95 @@ class Variable:
         "arg",
         "config",
         "env",
+        "set_env",
     )
 
     def __init__(
         self,
         default: Any = _UNSET,
         *,
-        type_: Optional[Any] = None,
+        type_: Any = _UNSET,
         arg: Optional[str] = None,
         config: Optional[str] = None,
         env: Optional[str] = None,
+        set_env: bool = True,
     ):
         self.default = default
         self.type_ = type_
         self.arg = arg
         self.config = config
         self.env = env
+        self.set_env = set_env
 
-    def resolve(self, name: str, type_: Optional[Any], args: Mapping[str, Any], cfg: dict[str, Any]) -> Any:
+    def resolve(self, name: str, args: Mapping[str, Any], cfg: dict[str, Any], type_: Any = _UNSET) -> Any:
         """Look up value from chain of CLI -> config -> env -> default? and try converting it to appropriate type"""
 
-        if self.type_ is not None:
+        try:
+            return self._resolve(name, args, cfg, type_)
+        except BaseConversionException as e:
+            e.name = name
+            e.var = self
+
+            raise
+
+    def _resolve(self, name: str, args: Mapping[str, Any], cfg: dict[str, Any], type_: Any) -> Any:
+        if self.type_ is not _UNSET:
             type_ = self.type_
 
-        if type_ is None:
+        if type_ is _UNSET:
             if self.default is _UNSET:
-                raise ValueError(f"Need type annotation for {name} as there is no default value")
+                raise TypeAnnotationNeeded
 
             type_ = type(self.default)
 
-        value = self.default
+        value, from_env = self.fetch_value(name, args, cfg)
 
-        if (env := self.env) is None:
-            env = name.upper()
+        if from_env:
+            return self.convert_env(value, type_)
 
-        # special handling for env syntax, make sure we are not touching default
-        if env in os.environ:
-            value = self.convert_env(os.environ[env], type_)
+        converted_value = self.convert_non_env(value, type_)
 
-        if (config := self.config) is None:
-            config = name
+        # overwrite environ only after successful conversion
+        # if we got variable from env we do not need to overwrite it
+        if self.set_env:
+            os.environ[self.env_name(name)] = str(value)
 
-        value = cfg.get(config, value)
+        return converted_value
+
+    def fetch_value(self, name: str, args: Mapping[str, Any], cfg: dict[str, Any]) -> tuple[Any, bool]:
+        """
+        Get value from different sources with prioritios of CLI -> config -> env -> default.
+
+        Second value indicates if value was fetched from env because env variables need special treatment.
+        """
 
         if (arg := self.arg) is None:
             arg = name
 
-        value = args.get(arg, value)
+        if arg in args:
+            return args[arg], False
 
-        if value is _UNSET:
-            raise ValueError(f"Missing required config value {name} / {env}")
+        if (config := self.config) is None:
+            config = name
 
-        if typing.get_origin(type_) in (Union, types.UnionType):
-            try:
-                return self.convert_from_union(value, type_)
-            except Exception as e:
-                raise ValueError(f"Unable to convert {name} / {env} to any of union types: {e}")
+        if config in cfg:
+            return cfg[config], False
 
-        if type(value) is not type_:
-            return type_(value)
+        if (env := self.env_name(name)) in os.environ:
+            return os.environ[env], True
 
-        return value
+        if self.default is _UNSET:
+            raise VariableMissing
+
+        return self.default, False
+
+    def env_name(self, name: str) -> str:
+        """Convert variable name to approprieate env name"""
+
+        if (env := self.env) is not None:
+            return env
+
+        return name.upper().replace("-", "_")
 
     @staticmethod
     def convert_env(value: str, type_: Any) -> Any:
@@ -120,6 +191,22 @@ class Variable:
 
         return value
 
+    @classmethod
+    def convert_non_env(cls, value: Any, type_: Any) -> Any:
+        if type(value) is type_:
+            return value
+
+        if typing.get_origin(type_) in (Union, types.UnionType):
+            try:
+                return cls.convert_from_union(value, type_)
+            except Exception as e:
+                raise VariableInvalid(f"Unable to convert to any of union types: [{e}]")
+
+        try:
+            return type_(value)
+        except Exception as e:
+            raise VariableInvalid(str(e))
+
     @staticmethod
     def convert_from_union(value: Any, type_: Union[Any]) -> Any:
         """Try converting value to any type in union"""
@@ -135,7 +222,7 @@ class Variable:
                 except Exception as e:
                     errors.append(e)
 
-            raise ValueError(" ".join(map(str, errors)))
+            raise VariableInvalid("; ".join(f"{tp}: {e}" for tp, e in zip(union_args, errors)))
 
         return value
 
@@ -194,7 +281,7 @@ class ConfigBase:
         # get vaiables with annotations:
         # foo: int
         # foo: int = Var(...)
-        type_hints = typing.get_type_hints(type(self))
+        variables = typing.get_type_hints(type(self))
 
         # fill variables without annotations:
         # foo = Var(int, ...)
@@ -206,10 +293,10 @@ class ConfigBase:
             if inspect.isfunction(value) or inspect.isdatadescriptor(value):
                 continue
 
-            if name not in type_hints:
-                type_hints[name] = None
+            if name not in variables:
+                variables[name] = _UNSET
 
-        for name, type_ in type_hints.items():
+        for name, type_ in variables.items():
             # default for cases where Var is omitted:
             # foo: int
             var: Any = getattr(self, name, Variable())
@@ -220,11 +307,11 @@ class ConfigBase:
                 var = Variable(var)
 
             try:
-                setattr(self, name, var.resolve(name, type_, args, config))
-            except Exception:
+                setattr(self, name, var.resolve(name, args, config, type_=type_))
+            except Exception as e:
                 log.error("resolving %s to %s of type %s", name, var, type_)
 
-                raise
+                raise e from None
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__} {' '.join(f'{k}={v}' for k,v in self.__dict__.items())}>"
