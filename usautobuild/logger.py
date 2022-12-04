@@ -76,7 +76,7 @@ def setup_extra_loggers(config: Config) -> None:
         global _discord_logger
 
         _discord_logger = BufferedDiscordHandler(discord_webhook)
-        _discord_logger.setFormatter(MaybeUwUFormatter())
+        _discord_logger.setFormatter(DicordFormatter())
         _discord_logger.setLevel(logging.INFO)
         log.addHandler(_discord_logger)
 
@@ -86,7 +86,7 @@ def teardown_loggers() -> None:
         _discord_logger.stop()
 
 
-class MaybeUwUFormatter(logging.Formatter):
+class DicordFormatter(logging.Formatter):
     uwu_replacements = {
         "r": "w",
         "!": "! owo",
@@ -126,10 +126,23 @@ class MaybeUwUFormatter(logging.Formatter):
 
         return message
 
+    @staticmethod
+    def emojis(message: str, record: logging.LogRecord) -> str:
+        if record.levelno >= logging.ERROR:
+            emoji = "\N{CROSS MARK}"
+        elif record.levelno >= logging.WARNING:
+            emoji = "\N{WARNING SIGN}"
+        else:
+            emoji = "\N{INFORMATION SOURCE}"
+
+        return f"{emoji} {message}"
+
     def format(self, record: logging.LogRecord) -> str:
         message = super().format(record)
 
-        return self.maybe_uwuize(message)
+        message = self.maybe_uwuize(message)
+
+        return self.emojis(message, record)
 
 
 class BufferedDiscordHandler(logging.Handler):
