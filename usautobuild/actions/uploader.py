@@ -2,7 +2,7 @@ from ftplib import FTP, all_errors, error_perm
 from logging import getLogger
 from shutil import make_archive as zip_folder
 
-from .config import Config
+from usautobuild.config import Config
 
 log = getLogger("usautobuild")
 

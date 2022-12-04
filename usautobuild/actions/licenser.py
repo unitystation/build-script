@@ -2,8 +2,8 @@ from logging import getLogger
 from pathlib import Path
 from subprocess import PIPE, Popen
 
-from .config import Config
-from .utils import iterate_output
+from usautobuild.config import Config
+from usautobuild.utils import iterate_output
 
 log = getLogger("usautobuild")
 

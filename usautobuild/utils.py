@@ -9,6 +9,7 @@ from typing import Iterator
 __all__ = (
     "run_process_shell",
     "iterate_output",
+    "get_version",
 )
 
 log = logging.getLogger("usautobuild")
@@ -90,3 +91,21 @@ def iterate_output(cmd: subprocess.Popen[bytes]) -> Iterator[tuple[str, bool]]:
     is_stdout = False
     if stream_buffers[is_stdout]:
         yield stream_buffers[is_stdout], is_stdout
+
+
+def get_version() -> str:
+    cmd = subprocess.Popen(
+        ("git", "log", "-n", "1", "--pretty=format:%h%d by %aN: %s"),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+
+    stdout, stderr = cmd.communicate()
+
+    if cmd.returncode:
+        log.debug("unable to get version: %s", stderr)
+
+        return "i don't even know"
+
+    return stdout

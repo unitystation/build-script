@@ -1,10 +1,14 @@
 import argparse
+import logging
 
 from pathlib import Path
 
 from usautobuild.actions import ApiCaller, Builder, Dockerizer, Gitter, Licenser, Uploader
 from usautobuild.config import Config
 from usautobuild.logger import LogLevel, setup_extra_loggers, setup_logger, teardown_loggers
+from usautobuild.utils import get_version
+
+log = logging.getLogger("usautobuild")
 
 _default_config_path = Path("config.json")
 
@@ -58,6 +62,8 @@ def main() -> None:
     builder = Builder(config)
     uploader = Uploader(config)
     dockerizer = Dockerizer(config)
+
+    log.info("Launched Build Bot version %s", get_version())
 
     gitter.start_gitting()
     builder.start_building()

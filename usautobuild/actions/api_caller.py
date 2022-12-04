@@ -2,7 +2,7 @@ from logging import getLogger
 
 import requests
 
-from .config import Config
+from usautobuild.config import Config
 
 log = getLogger("usautobuild")
 
