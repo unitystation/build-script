@@ -30,6 +30,7 @@ class Config(ConfigBase):
     dry_run = False
     abort_on_build_fail = True
     allow_no_changes = True
+    jobs: Optional[int] = None
 
     build_number = int(datetime.datetime.now().strftime("%y%m%d%H"))
 

@@ -21,7 +21,7 @@ ap.add_argument(
     help="Force a particular build number",
 )
 ap.add_argument(
-    "-gl",
+    "-g",
     "--get-license",
     action="store_true",
     help="Get license file and quit",
@@ -30,7 +30,7 @@ ap.add_argument(
     "-f",
     "--config-file",
     type=Path,
-    help=f"Path to the config file, defaults to {_default_config_path}",
+    help=f"Path to the config file. Defaults to {_default_config_path}",
     default=_default_config_path,
 )
 ap.add_argument(
@@ -44,6 +44,13 @@ ap.add_argument(
     "--dry-run",
     action="store_true",
     help="Run build until completion without uploading to FTP",
+)
+ap.add_argument(
+    "-j",
+    "--jobs",
+    type=int,
+    required=False,
+    help="Defines max step concurrency. Defaults to number of CPUs x 5",
 )
 args = vars(ap.parse_args())
 
