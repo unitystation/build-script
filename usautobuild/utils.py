@@ -15,8 +15,10 @@ __all__ = (
 log = logging.getLogger("usautobuild")
 
 
-def run_process_shell(command: str) -> int:
+def run_process_shell(command: str, stderr_on_failure: bool = False) -> int:
     """A simple helper function to run shell program to completion logging output and returning status"""
+
+    stderr = []
 
     with subprocess.Popen(
         command,
@@ -28,7 +30,14 @@ def run_process_shell(command: str) -> int:
             if is_stdout:
                 log.debug(line)
             else:
-                log.error(line)
+                if stderr_on_failure:
+                    stderr.append(line)
+                else:
+                    log.error(line)
+
+    if cmd.returncode:
+        for line in stderr:
+            log.error(line)
 
     return cmd.returncode
 
