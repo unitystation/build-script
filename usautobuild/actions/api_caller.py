@@ -1,31 +1,29 @@
 from logging import getLogger
+from typing import Any
 
 import requests
 
-from usautobuild.config import Config
+from usautobuild.action import Context, step
+
+from .action import USAction
 
 log = getLogger("usautobuild")
 
 
-class ApiCaller:
-    def __init__(self, config: Config):
-        self.api_url = config.changelog_api_url
-        self.api_key = config.changelog_api_key
-        self.build_number = config.build_number
-        self.dry_run = config.dry_run
-
-    def post_new_version(self) -> None:
+class APICaller(USAction):
+    @step()
+    def post_new_version(self, _ctx: Context) -> Any:
         if self.dry_run:
             log.info("Dry run, skipping Changelog API call")
             return
 
         data = {
-            "version_number": str(self.build_number),
-            "date_created": self.version_to_date(str(self.build_number)),
-            "secret_token": self.api_key,
+            "version_number": str(self.config.build_number),
+            "date_created": self.version_to_date(str(self.config.build_number)),
+            "secret_token": self.config.changelog_api_key,
         }
 
-        response = requests.post(self.api_url, data=data)
+        response = requests.post(self.config.changelog_api_url, data=data)
         try:
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:

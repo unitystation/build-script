@@ -5,9 +5,11 @@ import shutil
 from logging import getLogger
 from pathlib import Path
 
-from usautobuild.config import Config
+from usautobuild.action import Context, step
 from usautobuild.exceptions import BuildFailed, InvalidProjectPath, MissingLicenseFile
 from usautobuild.utils import run_process_shell
+
+from .action import USAction
 
 exec_name = {
     "linuxserver": "Unitystation",
@@ -26,24 +28,24 @@ platform_image = {
 log = getLogger("usautobuild")
 
 
-class Builder:
-    def __init__(self, config: Config):
-        self.config = config
-
-    def check_license(self) -> None:
+class Builder(USAction):
+    @step(dry=True)
+    def check_license(self, _ctx: Context) -> None:
         log.debug("Checking license file...")
         if not self.config.license_file.exists():
             log.error(f"Missing license file at given directory: {self.config.license_file}")
             raise MissingLicenseFile(self.config.license_file)
 
-    def clean_builds_folder(self) -> None:
+    @step()
+    def clean_builds_folder(self, _ctx: Context) -> None:
         path = self.config.output_dir
         if path.is_dir():
             log.debug("Found output folder, cleaning up!")
             shutil.rmtree(path)
             path.mkdir()
 
-    def create_builds_folders(self) -> None:
+    @step(depends=[clean_builds_folder])
+    def create_builds_folders(self, _ctx: Context) -> None:
         for target in self.config.target_platforms:
             try:
                 (Path.cwd() / self.config.output_dir / target).mkdir(exist_ok=True)
@@ -51,7 +53,8 @@ class Builder:
                 log.error(f"Failed to create output folders because: {e}!")
                 raise e
 
-    def set_jsons_data(self) -> None:
+    @step()
+    def set_jsons_data(self, _ctx: Context) -> None:
         log.debug("Changing data in json files from the game...")
         if not self.config.project_path:
             log.error("Invalid path to unity project. Aborting...")
@@ -91,7 +94,8 @@ class Builder:
             )
             json.dump(p_config_json, f, indent=4)
 
-    def set_addressables_mode(self) -> None:
+    @step()
+    def set_addressables_mode(self, _ctx: Context) -> None:
         log.debug("Changing addressable mode from GameData.prefab...")
         file = Path(
             self.config.project_path, "Assets", "Prefabs", "SceneConstruction", "NestedManagers", "GameData.prefab"
@@ -163,15 +167,8 @@ class Builder:
         if run_process_shell(command):
             raise BuildFailed(target)
 
-    def start_building(self) -> None:
-        log.info("Starting a new build!")
-
-        self.check_license()
-        self.clean_builds_folder()
-        self.create_builds_folders()
-        self.set_jsons_data()
-        self.set_addressables_mode()
-
+    @step(depends=[check_license, create_builds_folders, set_jsons_data, set_addressables_mode])
+    def start_building(self, _ctx: Context) -> None:
         for target in self.config.target_platforms:
             log.debug(f"Starting build for {target}...")
 
@@ -183,5 +180,10 @@ class Builder:
                     raise
             else:
                 log.debug(f"Finished build for {target}")
+
+    def run(self) -> None:
+        log.info("Starting a new build!")
+
+        super().run()
 
         log.info("Finished building!")

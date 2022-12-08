@@ -3,17 +3,17 @@ import shutil
 from logging import getLogger
 from pathlib import Path
 
-from usautobuild.config import Config
+from usautobuild.action import Context, step
 from usautobuild.utils import run_process_shell
+
+from .action import USAction
 
 log = getLogger("usautobuild")
 
 
-class Dockerizer:
-    def __init__(self, config: Config):
-        self.config = config
-
-    def copy_dockerfile(self) -> None:
+class Dockerizer(USAction):
+    @step()
+    def copy_dockerfile(self, _ctx: Context) -> None:
         log.debug("Preparing Docker folder")
 
         path = Path("Docker")
@@ -22,7 +22,8 @@ class Dockerizer:
 
         shutil.copytree("local_repo/Docker", path)
 
-    def copy_server_build(self) -> None:
+    @step()
+    def copy_server_build(self, _ctx: Context) -> None:
         log.debug("Copying server build")
 
         path = Path("Docker") / "server"
@@ -31,7 +32,8 @@ class Dockerizer:
 
         shutil.copytree(self.config.output_dir / "linuxserver", path)
 
-    def make_images(self) -> None:
+    @step(depends=[copy_dockerfile, copy_server_build])
+    def make_images(self, _ctx: Context) -> None:
         log.debug("Creating images...")
 
         if status := run_process_shell(
@@ -41,7 +43,8 @@ class Dockerizer:
         ):
             raise Exception(f"Build failed: {status}")
 
-    def push_images(self) -> None:
+    @step(depends=[make_images])
+    def push_images(self, _ctx: Context) -> None:
         log.debug("Pushing images...")
 
         if status := run_process_shell(
@@ -54,15 +57,11 @@ class Dockerizer:
         if status := run_process_shell("docker push unitystation/unitystation --all-tags"):
             raise Exception(f"Docker push failed: {status}")
 
-    def start_dockering(self) -> None:
-        if self.config.dry_run:
-            log.info("Dry run, skipping dockerization")
-            return
+    def run(self) -> None:
         log.debug("Starting docker process")
-        self.copy_dockerfile()
-        self.copy_server_build()
-        self.make_images()
-        self.push_images()
+
+        super().run()
+
         log.info(
             "Process finished, a new staging build has been deployed and should " "shortly be present on the server."
         )

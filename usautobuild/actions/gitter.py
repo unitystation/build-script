@@ -4,8 +4,10 @@ from typing import Any
 
 from git import RemoteProgress, Repo
 
-from usautobuild.config import Config
+from usautobuild.action import Context, step
 from usautobuild.exceptions import NoChanges
+
+from .action import USAction
 
 log = getLogger("usautobuild")
 
@@ -16,11 +18,9 @@ class CloneProgress(RemoteProgress):
             log.debug(message)
 
 
-class Gitter:
-    def __init__(self, config: Config):
-        self.config = config
-
-    def prepare_git_directory(self) -> None:
+class Gitter(USAction):
+    @step()
+    def prepare_git_directory(self, _ctx: Context) -> None:
         log.debug("Preparing git directory...")
         self.local_repo_dir = Path.cwd() / "local_repo"
 
@@ -46,6 +46,6 @@ class Gitter:
             log.error("Couldn't find changes after updating repo. Aborting build!")
             raise NoChanges(self.config.git_branch)
 
-    def start_gitting(self) -> None:
-        self.prepare_git_directory()
+    @step(depends=[prepare_git_directory])
+    def start_gitting(self, _ctx: Context) -> None:
         self.config.project_path = self.local_repo_dir / "UnityProject"
