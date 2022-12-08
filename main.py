@@ -3,7 +3,7 @@ import logging
 
 from pathlib import Path
 
-from usautobuild.actions import ApiCaller, Builder, Dockerizer, Gitter, Licenser, Uploader
+from usautobuild.actions import APICaller, Builder, Dockerizer, Gitter, Licenser, Uploader
 from usautobuild.config import Config
 from usautobuild.logger import LogLevel, setup_extra_loggers, setup_logger, teardown_loggers
 from usautobuild.utils import get_version
@@ -72,13 +72,13 @@ def main() -> None:
 
     log.info("Launched Build Bot version %s", get_version())
 
-    gitter.start_gitting()
-    builder.start_building()
-    uploader.start_upload()
-    dockerizer.start_dockering()
+    gitter.run()
+    builder.run()
+    uploader.run()
+    dockerizer.run()
 
-    api_caller = ApiCaller(config)
-    api_caller.post_new_version()
+    api_caller = APICaller(config)
+    api_caller.run()
 
 
 if __name__ == "__main__":
