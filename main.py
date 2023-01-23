@@ -21,6 +21,8 @@ def main() -> None:
         Licenser(config)
         return
 
+    log.info("Launched Build Bot version %s", git_version())
+
     if not config.release:
         log.warning("running a debug build that will not be registered")
         log.warning(f"if this is a mistake make sure to ping whoever started it to add --release flag {WARNING_GIF}")
@@ -29,8 +31,6 @@ def main() -> None:
     builder = Builder(config)
     uploader = Uploader(config)
     dockerizer = Dockerizer(config)
-
-    log.info("Launched Build Bot version %s", git_version())
 
     gitter.start_gitting()
     builder.start_building()
