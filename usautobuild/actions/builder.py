@@ -7,7 +7,7 @@ from pathlib import Path
 
 from usautobuild.config import Config
 from usautobuild.exceptions import BuildFailed, InvalidProjectPath, MissingLicenseFile
-from usautobuild.utils import run_process_shell
+from usautobuild.utils import git_version, run_process_shell
 
 exec_name = {
     "linuxserver": "Unitystation",
@@ -57,9 +57,9 @@ class Builder:
             log.error("Invalid path to unity project. Aborting...")
             raise InvalidProjectPath()
 
-        streaming_assets = Path(self.config.project_path, "Assets", "StreamingAssets")
-        build_info = Path(streaming_assets, "buildinfo.json")
-        config_json = Path(streaming_assets, "config", "config.json")
+        streaming_assets = self.config.project_path / "Assets" / "StreamingAssets"
+        build_info = streaming_assets / "buildinfo.json"
+        config_json = streaming_assets / "config" / "config.json"
 
         try:
             with open(build_info, "r") as f:
@@ -93,21 +93,21 @@ class Builder:
 
     def set_addressables_mode(self) -> None:
         log.debug("Changing addressable mode from GameData.prefab...")
-        file = Path(
-            self.config.project_path, "Assets", "Prefabs", "SceneConstruction", "NestedManagers", "GameData.prefab"
+        prefab_file = (
+            self.config.project_path / "Assets" / "Prefabs" / "SceneConstruction" / "NestedManagers" / "GameData.prefab"
         )
 
         try:
-            with open(file, "r", encoding="UTF-8") as f:
-                file_content = f.read()
+            with open(prefab_file, encoding="UTF-8") as f:
+                prefab = f.read()
         except FileNotFoundError:
             log.error("Coudn't find GameData prefab!")
             raise FileNotFoundError()
 
-        file_content = re.sub(r"DevBuild: \d", "DevBuild: 0", file_content)
+        prefab = re.sub(r"DevBuild: \d", "DevBuild: 0", prefab)
 
-        with open(file, "w", encoding="UTF-8") as f:
-            f.write(file_content)
+        with open(prefab_file, "w", encoding="UTF-8") as f:
+            f.write(prefab)
 
     def make_command(self, target: str) -> str:
         image = f"unityci/editor:{self.config.unity_version}{platform_image[target]}"
@@ -140,7 +140,7 @@ class Builder:
             f"-projectPath /root/UnityProject "
             f"-buildTarget {self.get_real_target(target)} "
             f"-executeMethod BuildScript.BuildProject "
-            f"-customBuildPath {Path('/root', 'builds', target, exec_name[target])} "
+            f"-customBuildPath {Path('/') / 'root' / 'builds' / target / exec_name[target]} "
             f"{self.get_devBuild_flag(target)}"
         )
 
@@ -164,7 +164,7 @@ class Builder:
             raise BuildFailed(target)
 
     def start_building(self) -> None:
-        log.info("Starting a new build!")
+        log.info("Starting a new build: %s", git_version(directory=self.config.project_path, brief=False))
 
         self.check_license()
         self.clean_builds_folder()

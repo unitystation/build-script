@@ -4,12 +4,13 @@ import selectors
 import subprocess
 import sys
 
-from typing import Iterator
+from pathlib import Path
+from typing import Iterator, Optional
 
 __all__ = (
     "run_process_shell",
     "iterate_output",
-    "get_version",
+    "git_version",
 )
 
 log = logging.getLogger("usautobuild")
@@ -102,9 +103,19 @@ def iterate_output(cmd: subprocess.Popen[bytes]) -> Iterator[tuple[str, bool]]:
         yield stream_buffers[is_stdout], is_stdout
 
 
-def get_version() -> str:
+def git_version(directory: Optional[Path] = None, brief: bool = True) -> str:
+    "Get repository version for given folder in human readable format. Single line"
+
+    if directory is None:
+        directory = Path.cwd()
+
+    if brief:
+        fmt = "%h%d %ar"
+    else:
+        fmt = "%h%d by %aN %ar: %s"
+
     cmd = subprocess.Popen(
-        ("git", "log", "-n", "1", "--pretty=format:%h%d by %aN: %s"),
+        ("git", "log", "-n", "1", f"--pretty=format:{fmt}", "-C", directory.absolute()),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
