@@ -137,6 +137,7 @@ class DicordFormatter(logging.Formatter):
                         "<:kloon:689668450250915960>",
                         "<:honk:686284698233602256>",
                         "<:malf:502254087081951242>",
+                        "<:peel:686283882416570530>",
                     ],
                 )
             else:
