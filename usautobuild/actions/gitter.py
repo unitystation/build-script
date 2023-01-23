@@ -42,7 +42,7 @@ class Gitter:
             branch = f"pr-{self.config.github_pr_number}"
             ref = f"pull/{self.config.github_pr_number}/head:{branch}"
         else:
-            branch = self.config.git_branch
+            branch = f"origin/{self.config.git_branch}"
             ref = None
 
         last_commit = self.local_repo.head.commit
