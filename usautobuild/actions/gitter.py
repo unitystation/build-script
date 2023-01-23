@@ -37,9 +37,17 @@ class Gitter:
 
     def update_repo(self) -> None:
         log.debug("Updating repo...")
+
+        if self.config.github_pr_number is not None:
+            branch = f"pr-{self.config.github_pr_number}"
+            ref = f"pull/{self.config.github_pr_number}/head:{branch}"
+        else:
+            branch = self.config.git_branch
+            ref = None
+
         last_commit = self.local_repo.head.commit
-        self.local_repo.remote("origin").fetch()
-        self.local_repo.git.reset("--hard", f"origin/{self.config.git_branch}")
+        self.local_repo.remote().fetch(ref)
+        self.local_repo.git.reset("--hard", branch)
         new_commit = self.local_repo.head.commit
 
         if last_commit == new_commit and not self.config.allow_no_changes:
