@@ -3,12 +3,16 @@ import datetime
 from pathlib import Path
 from typing import Optional
 
-from .config_base import ConfigBase
+from .config_base import ConfigBase, Var
 
 __all__ = ("Config",)
 
+DEFAULT_BRANCH = "develop"
+
 
 class Config(ConfigBase):
+    release: bool = False
+
     cdn_host: str
     cdn_user: str
     cdn_password: str
@@ -18,7 +22,8 @@ class Config(ConfigBase):
     changelog_api_key: str
 
     git_url = "https://github.com/unitystation/unitystation.git"
-    git_branch = "develop"
+    git_branch = Var(DEFAULT_BRANCH, arg="branch")
+    github_pr_number: Optional[int] = Var(None, arg="pr")
 
     unity_version = "2020.1.17f1"
     target_platforms = ["linuxserver", "StandaloneWindows64", "StandaloneOSX", "StandaloneLinux64"]

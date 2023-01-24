@@ -128,12 +128,39 @@ class DicordFormatter(logging.Formatter):
 
     @staticmethod
     def emojis(message: str, record: logging.LogRecord) -> str:
+        custom_emoji = random.random() < 0.1
+
         if record.levelno >= logging.ERROR:
-            emoji = "\N{CROSS MARK}"
+            if custom_emoji:
+                emoji = random.choice(
+                    [
+                        "<:kloon:689668450250915960>",
+                        "<:honk:686284698233602256>",
+                        "<:malf:502254087081951242>",
+                        "<:peel:686283882416570530>",
+                    ],
+                )
+            else:
+                emoji = "\N{CROSS MARK}"
         elif record.levelno >= logging.WARNING:
-            emoji = "\N{WARNING SIGN}"
+            if custom_emoji:
+                emoji = random.choice(
+                    [
+                        "<:PicachuDoobly:711218115597303819>",
+                        "<:doobly_drink:714016979693862973>",
+                    ],
+                )
+            else:
+                emoji = "\N{WARNING SIGN}"
         else:
-            emoji = "\N{INFORMATION SOURCE}"
+            if custom_emoji:
+                emoji = random.choice(
+                    [
+                        "<:ai:502254086507200524>",
+                    ],
+                )
+            else:
+                emoji = "\N{INFORMATION SOURCE}"
 
         return f"{emoji} {message}"
 
