@@ -115,7 +115,7 @@ def git_version(directory: Optional[Path] = None, brief: bool = True) -> str:
         fmt = "%h%d by %aN %ar: %s"
 
     cmd = subprocess.Popen(
-        ("git", "log", "-n", "1", f"--pretty=format:{fmt}", "-C", directory.absolute()),
+        ("git", "-C", directory.absolute(), "log", "-n", "1", f"--pretty=format:{fmt}"),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
