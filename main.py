@@ -8,7 +8,7 @@ from usautobuild.utils import git_version
 
 log = logging.getLogger("usautobuild")
 
-WARNING_GIF = "https://tenor.com/view/warning-you-gif-14422456"
+WARNING_GIF = "https://tenor.com/view/14422456"
 
 
 def main() -> None:
@@ -27,8 +27,8 @@ def _real_main(config: Config) -> None:
     log.info("Launched Build Bot version %s", git_version())
 
     if not config.release:
-        log.warning("running a debug build that will not be registered")
-        log.warning(f"if this is a mistake make sure to ping whoever started it to add --release flag {WARNING_GIF}")
+        log.warning("Running a debug build that will not be registered")
+        log.warning(f"If this is a mistake make sure to ping whoever started it to add --release flag {WARNING_GIF}")
 
     gitter = Gitter(config)
     builder = Builder(config)
