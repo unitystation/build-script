@@ -186,6 +186,17 @@ python-versions = ">=3.7"
 gitdb = ">=4.0.1,<5"
 
 [[package]]
+name = "humanize"
+version = "4.5.0"
+description = "Python humanize utilities"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.extras]
+tests = ["freezegun", "pytest", "pytest-cov"]
+
+[[package]]
 name = "identify"
 version = "2.5.9"
 description = "File identification library for Python"
@@ -516,7 +527,7 @@ testing = ["coverage (>=6.2)", "coverage-enable-subprocess (>=1)", "flaky (>=3.7
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "5d811ec6f108bdd0c48eb5ced84e211d844d29a76e1bd8aba84cc1074fec2a59"
+content-hash = "876514e1e84032abfd4daff7281265aa460befaec061567263dacdd18b2a734b"
 
 [metadata.files]
 attrs = [
@@ -649,6 +660,10 @@ gitdb = [
 gitpython = [
     {file = "GitPython-3.1.29-py3-none-any.whl", hash = "sha256:41eea0deec2deea139b459ac03656f0dd28fc4a3387240ec1d3c259a2c47850f"},
     {file = "GitPython-3.1.29.tar.gz", hash = "sha256:cc36bfc4a3f913e66805a28e84703e419d9c264c1077e537b54f0e1af85dbefd"},
+]
+humanize = [
+    {file = "humanize-4.5.0-py3-none-any.whl", hash = "sha256:127e333677183070b82e90e0faef9440f9a16dab92143e52f4523afb08ca9290"},
+    {file = "humanize-4.5.0.tar.gz", hash = "sha256:d6ed00ed4dc59a66df71012e3d69cf655d7d21b02112d435871998969e8aedc8"},
 ]
 identify = [
     {file = "identify-2.5.9-py2.py3-none-any.whl", hash = "sha256:a390fb696e164dbddb047a0db26e57972ae52fbd037ae68797e5ae2f4492485d"},
