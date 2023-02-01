@@ -132,6 +132,6 @@ def git_version(directory: Optional[Path] = None, brief: bool = True) -> str:
     if not brief:
         time_delta = datetime.now(tz=last_commit.committed_datetime.tzinfo) - last_commit.committed_datetime
 
-        version += f" by {last_commit.author}" f" {humanize.naturaltime(time_delta)}" f": {str(last_commit.summary)}"
+        version += f" by {last_commit.author} {humanize.naturaltime(time_delta)}: {str(last_commit.summary)}"
 
     return version
