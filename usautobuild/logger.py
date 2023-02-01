@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import collections
 import datetime
@@ -11,7 +13,7 @@ import time
 
 from logging import handlers
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import requests
 
@@ -20,10 +22,8 @@ from .config import Config
 log = logging.getLogger("usautobuild")
 
 __all__ = (
+    "Logger",
     "LogLevel",
-    "setup_logger",
-    "setup_extra_loggers",
-    "teardown_loggers",
 )
 
 
@@ -43,47 +43,59 @@ class LogLevel:
         return level
 
 
-def setup_logger(level: int) -> None:
-    """Configure basic logging facilities"""
+class Logger:
+    """Simple logger context. NOTE: it is not reusable despite being context"""
 
-    log.setLevel(level)
+    __logger_initialized = False
 
-    fmt = logging.Formatter("[%(asctime)s::%(name)s::%(levelname)s] %(message)s")
-
-    sh = logging.StreamHandler(sys.stdout)
-    sh.setFormatter(fmt)
-    log.addHandler(sh)
-
-    log_path = Path("logs")
-    log_path.mkdir(exist_ok=True)
-
-    fh = handlers.RotatingFileHandler(
-        log_path / datetime.datetime.now().strftime("%y-%m-%d-%H.log"),
-        maxBytes=(1048576 * 5),
-        backupCount=7,
+    __slots__ = (
+        "_level",
+        "_discord_logger",
     )
-    fh.setFormatter(fmt)
-    log.addHandler(fh)
 
+    def __init__(self, level: int) -> None:
+        self._level = level
+        self._discord_logger: Optional[BufferedDiscordHandler] = None
 
-_discord_logger = None
+    def __enter__(self) -> Logger:
+        if Logger.__logger_initialized:
+            raise RuntimeError("Logger can only be initialized once")
 
+        Logger.__logger_initialized = True
 
-def setup_extra_loggers(config: Config) -> None:
-    """Configure complex loggers requiring config"""
+        log.setLevel(self._level)
 
-    if (discord_webhook := config.discord_webhook) is not None:
-        global _discord_logger
+        fmt = logging.Formatter("[%(asctime)s::%(name)s::%(levelname)s] %(message)s")
 
-        _discord_logger = BufferedDiscordHandler(discord_webhook)
-        _discord_logger.setFormatter(DicordFormatter())
-        _discord_logger.setLevel(logging.INFO)
-        log.addHandler(_discord_logger)
+        sh = logging.StreamHandler(sys.stdout)
+        sh.setFormatter(fmt)
+        log.addHandler(sh)
 
+        log_path = Path("logs")
+        log_path.mkdir(exist_ok=True)
 
-def teardown_loggers() -> None:
-    if _discord_logger is not None:
-        _discord_logger.stop()
+        fh = handlers.RotatingFileHandler(
+            log_path / datetime.datetime.now().strftime("%y-%m-%d-%H.log"),
+            maxBytes=(1048576 * 5),
+            backupCount=7,
+        )
+        fh.setFormatter(fmt)
+        log.addHandler(fh)
+
+        return self
+
+    def __exit__(self, *_args: Any) -> None:
+        if (discord_logger := self._discord_logger) is not None:
+            discord_logger.stop()
+
+    def configure(self, config: Config) -> None:
+        """Configure complex loggers requiring config"""
+
+        if (discord_webhook := config.discord_webhook) is not None:
+            self._discord_logger = BufferedDiscordHandler(discord_webhook)
+            self._discord_logger.setFormatter(DicordFormatter())
+            self._discord_logger.setLevel(logging.INFO)
+            log.addHandler(self._discord_logger)
 
 
 class DicordFormatter(logging.Formatter):
