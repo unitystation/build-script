@@ -3,20 +3,23 @@ import logging
 from usautobuild.actions import ApiCaller, Builder, Dockerizer, Gitter, Licenser, Uploader
 from usautobuild.cli import args
 from usautobuild.config import Config
-from usautobuild.logger import setup_extra_loggers, setup_logger, teardown_loggers
+from usautobuild.logger import Logger
 from usautobuild.utils import git_version
 
 log = logging.getLogger("usautobuild")
 
-WARNING_GIF = "https://tenor.com/view/warning-you-gif-14422456"
+WARNING_GIF = "https://tenor.com/view/14422456"
 
 
 def main() -> None:
-    setup_logger(args["log_level"])
+    with Logger(args["log_level"]) as logger:
+        config = Config(args)
+        logger.configure(config)
 
-    config = Config(args)
-    setup_extra_loggers(config)
+        _real_main(config)
 
+
+def _real_main(config: Config) -> None:
     if args["get_license"]:
         Licenser(config)
         return
@@ -24,8 +27,8 @@ def main() -> None:
     log.info("Launched Build Bot version %s", git_version())
 
     if not config.release:
-        log.warning("running a debug build that will not be registered")
-        log.warning(f"if this is a mistake make sure to ping whoever started it to add --release flag {WARNING_GIF}")
+        log.warning("Running a debug build that will not be registered")
+        log.warning(f"If this is a mistake make sure to ping whoever started it to add --release flag {WARNING_GIF}")
 
     gitter = Gitter(config)
     builder = Builder(config)
@@ -43,7 +46,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    finally:
-        teardown_loggers()
+    main()
