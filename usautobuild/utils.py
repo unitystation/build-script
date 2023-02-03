@@ -4,8 +4,13 @@ import selectors
 import subprocess
 import sys
 
+from datetime import datetime
 from pathlib import Path
 from typing import Iterator, Optional
+
+import humanize
+
+from git import Repo
 
 __all__ = (
     "run_process_shell",
@@ -104,28 +109,29 @@ def iterate_output(cmd: subprocess.Popen[bytes]) -> Iterator[tuple[str, bool]]:
 
 
 def git_version(directory: Optional[Path] = None, brief: bool = True) -> str:
-    "Get repository version for given folder in human readable format. Single line"
+    """Get repository version for given folder in human readable format. Single line"""
 
     if directory is None:
         directory = Path.cwd()
 
-    if brief:
-        fmt = "%h%d %ar"
+    repo = Repo(directory, search_parent_directories=True)
+    last_commit = repo.commit()
+
+    if repo.is_dirty():
+        version = "[DIRTY] "
     else:
-        fmt = "%h%d by %aN %ar: %s"
+        version = ""
 
-    cmd = subprocess.Popen(
-        ("git", "-C", directory.absolute(), "log", "-n", "1", f"--pretty=format:{fmt}"),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-    )
+    try:
+        branch_name = str(repo.active_branch)
+    except TypeError:
+        branch_name = "DETACHED"
 
-    stdout, stderr = cmd.communicate()
+    version += f"{last_commit.hexsha[:7]} on {branch_name}"
 
-    if cmd.returncode:
-        log.debug("unable to get version: %s", stderr)
+    if not brief:
+        time_delta = datetime.now(tz=last_commit.committed_datetime.tzinfo) - last_commit.committed_datetime
 
-        return "i don't even know"
+        version += f" by {last_commit.author} {humanize.naturaltime(time_delta)}: {str(last_commit.summary)}"
 
-    return stdout
+    return version

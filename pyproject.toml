@@ -8,6 +8,7 @@ authors = ["Andrés Riquelme <andresfranco.rs@gmail.com>"]
 python = "^3.10"
 requests = "^2.25.0"
 gitpython = "^3.1.29"
+humanize = "^4.5.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.10.0"
