@@ -5,7 +5,7 @@ import shutil
 from logging import getLogger
 from pathlib import Path
 
-from usautobuild.config import Config
+from usautobuild.action import Action, step
 from usautobuild.exceptions import BuildFailed, InvalidProjectPath, MissingLicenseFile
 from usautobuild.utils import git_version, run_process_shell
 
@@ -26,16 +26,19 @@ platform_image = {
 log = getLogger("usautobuild")
 
 
-class Builder:
-    def __init__(self, config: Config):
-        self.config = config
+class Builder(Action):
+    @step(dry=True)
+    def log_start(self) -> None:
+        log.info("Starting a new build: %s", git_version(directory=self.config.project_path, brief=False))
 
+    @step(dry=True)
     def check_license(self) -> None:
         log.debug("Checking license file...")
         if not self.config.license_file.exists():
-            log.error(f"Missing license file at given directory: {self.config.license_file}")
+            log.error("Missing license file at given directory: %s", self.config.license_file)
             raise MissingLicenseFile(self.config.license_file)
 
+    @step()
     def clean_builds_folder(self) -> None:
         path = self.config.output_dir
         if path.is_dir():
@@ -43,15 +46,17 @@ class Builder:
             shutil.rmtree(path)
             path.mkdir()
 
-    def create_builds_folders(self) -> None:
+    @step()
+    def create_build_folders(self) -> None:
         for target in self.config.target_platforms:
             try:
                 (Path.cwd() / self.config.output_dir / target).mkdir(exist_ok=True)
             except Exception as e:
-                log.error(f"Failed to create output folders because: {e}!")
-                raise e
+                log.error("Failed to create output folders: %s!", e)
+                raise
 
-    def set_jsons_data(self) -> None:
+    @step()
+    def write_build_config(self) -> None:
         log.debug("Changing data in json files from the game...")
         if not self.config.project_path:
             log.error("Invalid path to unity project. Aborting...")
@@ -62,13 +67,13 @@ class Builder:
         config_json = streaming_assets / "config" / "config.json"
 
         try:
-            with open(build_info, "r") as f:
+            with open(build_info) as f:
                 p_build_info = json.load(f)
         except FileNotFoundError:
             log.error("Couldn't find build info file!")
             raise
         try:
-            with open(config_json, "r") as f:
+            with open(config_json) as f:
                 p_config_json = json.load(f)
         except FileNotFoundError:
             log.error("Coudln't find game config file!")
@@ -91,6 +96,7 @@ class Builder:
             )
             json.dump(p_config_json, f, indent=4)
 
+    @step()
     def set_addressables_mode(self) -> None:
         log.debug("Changing addressable mode from GameData.prefab...")
         prefab_file = (
@@ -102,86 +108,60 @@ class Builder:
                 prefab = f.read()
         except FileNotFoundError:
             log.error("Coudn't find GameData prefab!")
-            raise FileNotFoundError()
+            raise
 
         prefab = re.sub(r"DevBuild: \d", "DevBuild: 0", prefab)
 
         with open(prefab_file, "w", encoding="UTF-8") as f:
             f.write(prefab)
 
-    def make_command(self, target: str) -> str:
+    @step()
+    def build(self) -> None:
+        for target in self.config.target_platforms:
+            log.debug("Starting build for %s...", target)
+
+            try:
+                self.build_target(target)
+            except BuildFailed:
+                if self.config.abort_on_build_fail:
+                    log.error("Build for %s failed and config is set to abort on fail!", target)
+                    raise
+            else:
+                log.debug("Finished build for %s", target)
+
+        log.info("Finished building!")
+
+    def build_target(self, target: str) -> None:
         image = f"unityci/editor:{self.config.unity_version}{platform_image[target]}"
 
-        return (
-            # pull first because docker run does not have -q alternative
-            f"docker pull -q {image} && "
-            f"docker run --rm "
-            f"{self.generate_mounts()} "
-            f"{image} "
-            f"unity-editor "
-            f"{self.generate_build_args(target)} "
-            f"-logfile /root/logs/{target}.txt "
-            f"-quit"
-        )
-
-    def generate_mounts(self) -> str:
         cwd = Path.cwd()
 
-        return (
+        mounts = (
             f"-v {self.config.project_path}:/root/UnityProject "
             f"-v {self.config.output_dir}:/root/builds "
             f"-v {cwd /'logs'}:/root/logs "
             f"-v {cwd / self.config.license_file}:/root/.local/share/unity3d/Unity/Unity_lic.ulf "
         )
 
-    def generate_build_args(self, target: str) -> str:
-        return (
+        dev_flag = " -devBuild -deepProfile" if target.lower() == "linuxserver" else ""
+        target_name = "StandaloneLinux64" if target.lower() == "linuxserver" else target
+
+        unity_args = (
             f"-nographics "
             f"-projectPath /root/UnityProject "
-            f"-buildTarget {self.get_real_target(target)} "
+            f"-buildTarget {target_name} "
             f"-executeMethod BuildScript.BuildProject "
             f"-customBuildPath {Path('/') / 'root' / 'builds' / target / exec_name[target]} "
-            f"{self.get_devBuild_flag(target)}"
+            f"{dev_flag} "
+            f"-logfile /root/logs/{target}.txt "
+            f"-quit"
         )
 
-    def get_real_target(self, target: str) -> str:
-        if target.lower() == "linuxserver":
-            return "StandaloneLinux64"
-
-        return target
-
-    def get_devBuild_flag(self, target: str) -> str:
-        if target.lower() == "linuxserver":
-            return "-devBuild -deepProfile"
-
-        return ""
-
-    def build(self, target: str) -> None:
-        command = self.make_command(target)
-        log.debug(f"Running command\n{command}\n")
+        command = (
+            # pull first because docker run does not have -q alternative
+            f"docker pull -q {image} && "
+            f"docker run --rm {mounts} {image} unity-editor {unity_args}"
+        )
 
         if run_process_shell(command):
             raise BuildFailed(target)
-
-    def start_building(self) -> None:
-        log.info("Starting a new build: %s", git_version(directory=self.config.project_path, brief=False))
-
-        self.check_license()
-        self.clean_builds_folder()
-        self.create_builds_folders()
-        self.set_jsons_data()
-        self.set_addressables_mode()
-
-        for target in self.config.target_platforms:
-            log.debug(f"Starting build for {target}...")
-
-            try:
-                self.build(target)
-            except BuildFailed:
-                if self.config.abort_on_build_fail:
-                    log.error(f"Build for {target} failed and config is set to abort on fail!")
-                    raise
-            else:
-                log.debug(f"Finished build for {target}")
-
-        log.info("Finished building!")

@@ -24,6 +24,8 @@ log = logging.getLogger("usautobuild")
 def run_process_shell(command: str, stderr_on_failure: bool = False) -> int:
     """A simple helper function to run shell program to completion logging output and returning status"""
 
+    log.debug("Running command: %s", command)
+
     stderr = []
 
     with subprocess.Popen(

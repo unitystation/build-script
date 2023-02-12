@@ -2,20 +2,22 @@ from logging import getLogger
 from pathlib import Path
 from subprocess import PIPE, Popen
 
-from usautobuild.config import Config
+from usautobuild.action import Action, step
 from usautobuild.utils import iterate_output
 
 log = getLogger("usautobuild")
 
 
-class Licenser:
-    def __init__(self, config: Config):
-        self.config = config
+class Licenser(Action):
+    @step(dry=True)
+    def log_start(self) -> None:
         log.info("Requesting a manual activation file...")
-        self.prepare_licenses_folder()
-        self.run_command(self.make_command())
+
+    @step(dry=True)
+    def log_done(self) -> None:
         log.info("Process finished satisfactorily")
 
+    @step()
     def prepare_licenses_folder(self) -> None:
         log.debug("Preparing licenses folder...")
         licenses_folder = Path.cwd() / "licenses"
@@ -23,10 +25,11 @@ class Licenser:
             log.debug("Folder not found, creating it instead.")
             licenses_folder.mkdir()
 
-    def make_command(self) -> str:
+    @step()
+    def get_license(self) -> None:
         cwd = Path.cwd()
 
-        return (
+        command = (
             f"docker run --rm "
             f"-v {cwd / 'licenses'}:/root/licenses "
             f"-v {cwd / 'logs'}:/root/logs "
@@ -34,9 +37,6 @@ class Licenser:
             f"unityci/editor:{self.config.unity_version}-base-0 unity-editor "
             f"-batchmode -nographics -createManualActivationFile -logfile /root/logs/licenser.txt "
         )
-
-    def run_command(self, command: str) -> None:
-        log.debug(f"Running command \n{command}\n")
 
         with Popen(command, stdout=PIPE, stderr=PIPE, shell=True) as cmd:
             for line, is_stdout in iterate_output(cmd):

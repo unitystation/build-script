@@ -2,17 +2,24 @@ from ftplib import FTP, all_errors, error_perm
 from logging import getLogger
 from shutil import make_archive as zip_folder
 
-from usautobuild.config import Config
+from usautobuild.action import Action, step
 
 log = getLogger("usautobuild")
 
 
-class Uploader:
+class Uploader(Action):
     MAX_UPLOAD_ATTEMPTS = 10
 
-    def __init__(self, config: Config):
-        self.config = config
+    @step(dry=True)
+    def log_start(self) -> None:
+        log.debug("Starting upload to cdn process...")
 
+    @step()
+    def zip_folders(self) -> None:
+        for target in self.config.target_platforms:
+            self.zip_build_folder(target)
+
+    @step()
     def upload_to_cdn(self) -> None:
         ftp = FTP()
 
@@ -67,14 +74,3 @@ class Uploader:
     def zip_build_folder(self, target: str) -> None:
         build_folder = self.config.output_dir / target
         zip_folder(str(build_folder), "zip", build_folder)
-
-    def start_upload(self) -> None:
-        if self.config.dry_run:
-            log.info("Dry run, skipping upload")
-            return
-        log.debug("Starting upload to cdn process...")
-
-        for target in self.config.target_platforms:
-            self.zip_build_folder(target)
-
-        self.upload_to_cdn()
