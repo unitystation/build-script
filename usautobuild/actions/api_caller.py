@@ -36,4 +36,4 @@ class ApiCaller(Action):
         month = version[2:4]
         day = version[4:6]
 
-        return f"20{year:0>2}-{month:0>2}-{day:0>2}"
+        return f"20{year}-{month}-{day}"
