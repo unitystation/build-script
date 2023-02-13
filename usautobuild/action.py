@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 
 from collections.abc import Callable, Collection
-from typing import TYPE_CHECKING, Any, Generic, Optional, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, ParamSpec, TypeVar
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -21,11 +21,11 @@ P = ParamSpec("P")
 R = TypeVar("R")
 
 
-def step(name: Optional[str] = None, dry: bool = False) -> Callable[[Callable[P, R]], Callable[P, R]]:
+def step(dry: bool = False) -> Callable[[Callable[P, R]], Callable[P, R]]:
     """Decorator for marking action steps"""
 
     def wrapped(fn: Callable[P, R]) -> Callable[P, R]:
-        return Step(fn, name=name, dry=dry)
+        return Step(fn, dry=dry)
 
     return wrapped
 
@@ -38,20 +38,18 @@ class Step(Generic[P, R]):
         "__action__",
         "_fn",
         "_dry",
-        "_name",
     )
 
-    def __init__(self, fn: Callable[P, R], *, name: Optional[str], dry: bool):
+    def __init__(self, fn: Callable[P, R], *, dry: bool):
         self._fn = fn
 
-        self._name = fn.__name__ if name is None else name
         self._dry = dry
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
         return self._fn(self.__action__, *args, **kwargs)  # type: ignore
 
     def __str__(self) -> str:
-        return self._name
+        return self._fn.__name__
 
     @property
     def is_dry(self) -> bool:
