@@ -21,7 +21,7 @@ def main() -> None:
 
 def _real_main(config: Config) -> None:
     if args["get_license"]:
-        Licenser(config).run()
+        Licenser.run(config)
         return
 
     log.info("Launched Build Bot version %s", git_version())
@@ -31,19 +31,13 @@ def _real_main(config: Config) -> None:
         if config.discord_webhook is not None:
             log.warning("If this is a mistake make sure to ping **PLACEHOLDER** to add --release flag %s", WARNING_GIF)
 
-    gitter = Gitter(config)
-    builder = Builder(config)
-    uploader = Uploader(config)
-    dockerizer = Dockerizer(config)
-
-    gitter.run()
-    builder.run()
-    uploader.run()
-    dockerizer.run()
+    actions = [Gitter, Builder, Uploader, Dockerizer]
 
     if config.release:
-        api_caller = ApiCaller(config)
-        api_caller.run()
+        actions.append(ApiCaller)
+
+    for action in actions:
+        action.run(config)
 
 
 if __name__ == "__main__":
