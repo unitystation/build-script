@@ -190,5 +190,5 @@ class Builder:
                 final_build_time = ':.2f'.format((time.time() - build_time))
                 log.info(f"Finished build for {target}. Time took: {final_build_time}")
 
-        final_time = ':.2f'.format((time_start - build_time))
+        final_time = ':.2f'.format((time.time() - time_start))
         log.info(f"Finished building!\nTotal Time Took: {final_time}")
