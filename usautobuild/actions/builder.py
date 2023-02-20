@@ -183,7 +183,7 @@ class Builder:
             except BuildFailed:
                 if self.config.abort_on_build_fail:
                     final_build_time = ':.2f'.format((time.time() - build_time))
-                    final_time = ':.2f'.format((time_start - build_time))
+                    final_time = ':.2f'.format((time.time() - time_start))
                     log.error(f"Build for {target} failed and config is set to abort on fail!\n Build Time Took: {final_build_time}.\n Total Time Took: {final_time}")
                     raise
             else:
