@@ -1,6 +1,7 @@
 import json
 import re
 import shutil
+import time
 
 from logging import getLogger
 from pathlib import Path
@@ -165,6 +166,7 @@ class Builder:
 
     def start_building(self) -> None:
         log.info("Starting a new build: %s", git_version(directory=self.config.project_path, brief=False))
+        time_start = time.time()
 
         self.check_license()
         self.clean_builds_folder()
@@ -174,14 +176,19 @@ class Builder:
 
         for target in self.config.target_platforms:
             log.debug(f"Starting build for {target}...")
+            build_time = time.time()
 
             try:
                 self.build(target)
             except BuildFailed:
                 if self.config.abort_on_build_fail:
-                    log.error(f"Build for {target} failed and config is set to abort on fail!")
+                    final_build_time = ':.2f'.format((time.time() - build_time))
+                    final_time = ':.2f'.format((time_start - build_time))
+                    log.error(f"Build for {target} failed and config is set to abort on fail!\n Build Time Took: {final_build_time}.\n Total Time Took: {final_time}")
                     raise
             else:
-                log.debug(f"Finished build for {target}")
+                final_build_time = ':.2f'.format((time.time() - build_time))
+                log.info(f"Finished build for {target}. Time took: {final_build_time}")
 
-        log.info("Finished building!")
+        final_time = ':.2f'.format((time_start - build_time))
+        log.info(f"Finished building!\nTotal Time Took: {final_time}")
