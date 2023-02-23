@@ -138,6 +138,7 @@ class Builder:
     def generate_build_args(self, target: str) -> str:
         return (
             f"-nographics "
+            f"-ignoreCompilerErrors "
             f"-projectPath /root/UnityProject "
             f"-buildTarget {self.get_real_target(target)} "
             f"-executeMethod BuildScript.BuildProject "
