@@ -182,13 +182,13 @@ class Builder:
                 self.build(target)
             except BuildFailed:
                 if self.config.abort_on_build_fail:
-                    time_final_target = ':.2f'.format((time.time() - time_target))
-                    time_final_build = ':.2f'.format((time.time() - time_building_start))
-                    log.error(f"Build for {target} failed and config is set to abort on fail!\n Build Time Took: {time_final_target}.\n Total Time Took: {time_final_build}")
+                    time_final_target = time.time() - time_target
+                    time_final_build = time.time() - time_building_start
+                    log.error(f"Build for {target} failed and config is set to abort on fail!\n Build Time Took: {time_final_target:.2f}.\n Total Time Took: {time_final_build:.2f}")
                     raise
             else:
-                time_final_build = ':.2f'.format((time.time() - time_target))
-                log.info(f"Finished build for {target}. Time took: {time_final_build}")
+                time_final_build = time.time() - time_target
+                log.info(f"Finished build for {target}. Time took: {time_final_build:.2f}")
 
-        time_building_final = ':.2f'.format((time.time() - time_building_start))
-        log.info(f"Finished building!\nTotal Time Took: {time_building_final}")
+        time_building_final = time.time() - time_building_start
+        log.info(f"Finished building!\nTotal Time Took: {time_building_final:.2f}")
