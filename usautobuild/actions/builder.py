@@ -166,7 +166,7 @@ class Builder:
 
     def start_building(self) -> None:
         log.info("Starting a new build: %s", git_version(directory=self.config.project_path, brief=False))
-        time_start = time.time()
+        time_building_start = time.time()
 
         self.check_license()
         self.clean_builds_folder()
@@ -176,19 +176,19 @@ class Builder:
 
         for target in self.config.target_platforms:
             log.debug(f"Starting build for {target}...")
-            build_time = time.time()
+            time_target = time.time()
 
             try:
                 self.build(target)
             except BuildFailed:
                 if self.config.abort_on_build_fail:
-                    final_build_time = ':.2f'.format((time.time() - build_time))
-                    final_time = ':.2f'.format((time.time() - time_start))
-                    log.error(f"Build for {target} failed and config is set to abort on fail!\n Build Time Took: {final_build_time}.\n Total Time Took: {final_time}")
+                    time_final_target = ':.2f'.format((time.time() - time_target))
+                    time_final_build = ':.2f'.format((time.time() - time_building_start))
+                    log.error(f"Build for {target} failed and config is set to abort on fail!\n Build Time Took: {time_final_target}.\n Total Time Took: {time_final_build}")
                     raise
             else:
-                final_build_time = ':.2f'.format((time.time() - build_time))
-                log.info(f"Finished build for {target}. Time took: {final_build_time}")
+                time_final_build = ':.2f'.format((time.time() - time_target))
+                log.info(f"Finished build for {target}. Time took: {time_final_build}")
 
-        final_time = ':.2f'.format((time.time() - time_start))
-        log.info(f"Finished building!\nTotal Time Took: {final_time}")
+        time_building_final = ':.2f'.format((time.time() - time_building_start))
+        log.info(f"Finished building!\nTotal Time Took: {time_building_final}")
