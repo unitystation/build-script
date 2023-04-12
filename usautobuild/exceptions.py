@@ -24,6 +24,10 @@ class BuildFailed(BaseException):
         super().__init__(f"Build for {target} failed!")
 
 
+class NugetRestoreFailed(BaseException):
+    def __init__(self, path: Path) -> None:
+        super().__init__(f"Nuget restore failed in {path}! Is the path invalid or is NugetForUnity not installed?")
+
 class MissingLicenseFile(BaseException):
     def __init__(self, path: Path) -> None:
         super().__init__(f"License file couldn't be found in set directory {path}")
