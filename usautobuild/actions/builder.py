@@ -7,7 +7,7 @@ from logging import getLogger
 from pathlib import Path
 
 from usautobuild.config import Config
-from usautobuild.exceptions import BuildFailed, InvalidProjectPath, MissingLicenseFile
+from usautobuild.exceptions import BuildFailed, InvalidProjectPath, MissingLicenseFile, NugetRestoreFailed
 from usautobuild.utils import git_version, run_process_shell
 
 exec_name = {
@@ -165,6 +165,13 @@ class Builder:
         if run_process_shell(command):
             raise BuildFailed(target)
 
+    def restore_nuget_packages(self) -> None:
+        log.debug("Restoring nuget packages...")
+        command = f"dotnet nugetforunity restore {self.config.project_path}"
+
+        if run_process_shell(command, True):
+            raise NugetRestoreFailed(self.config.project_path)
+
     def start_building(self) -> None:
         log.info("Starting a new build: %s", git_version(directory=self.config.project_path, brief=False))
         time_building_start = time.time()
@@ -174,6 +181,7 @@ class Builder:
         self.create_builds_folders()
         self.set_jsons_data()
         self.set_addressables_mode()
+        self.restore_nuget_packages()
 
         for target in self.config.target_platforms:
             log.debug(f"Starting build for {target}...")
