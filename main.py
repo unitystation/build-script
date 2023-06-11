@@ -1,6 +1,6 @@
 import logging
 
-from usautobuild.actions import ApiCaller, Builder, Dockerizer, Gitter, Licenser, Uploader
+from usautobuild.actions import ApiCaller, Builder, Dockerizer, Gitter, Licenser, Uploader, DiscordChangelogPoster
 from usautobuild.cli import args
 from usautobuild.config import Config
 from usautobuild.logger import Logger
@@ -43,6 +43,8 @@ def _real_main(config: Config) -> None:
     if config.release:
         api_caller = ApiCaller(config)
         api_caller.post_new_version()
+        changelog_poster = DiscordChangelogPoster(config)
+        changelog_poster.start_posting()
 
 
 if __name__ == "__main__":
