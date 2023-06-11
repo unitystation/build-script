@@ -167,7 +167,7 @@ class Builder:
 
     def restore_nuget_packages(self) -> None:
         log.debug("Restoring nuget packages...")
-        command = f"dotnet nugetforunity restore {self.config.project_path}"
+        command = f"nugetforunity restore {self.config.project_path}"
 
         if run_process_shell(command, True):
             raise NugetRestoreFailed(self.config.project_path)
