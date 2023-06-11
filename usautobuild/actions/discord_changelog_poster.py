@@ -1,0 +1,124 @@
+from collections import defaultdict
+from dataclasses import dataclass
+from logging import getLogger
+from typing import DefaultDict
+
+from usautobuild.config import Config
+import requests
+
+log = getLogger("usautobuild")
+
+category_to_emoji = {
+    "NEW": ":new:",
+    "FIX": ":wrench:",
+    "BALANCE": ":scales:",
+    "IMPROVEMENT": ":arrow_up:",
+}
+
+
+@dataclass
+class ChangeModel:
+    author_username: str
+    description: str
+    pr_url: str
+    pr_number: int
+    category: str
+    build: str
+    date_added: str
+
+
+@dataclass
+class Pr:
+    pr_number: int
+    changes: list[ChangeModel]
+
+
+@dataclass
+class NewestBuildModel:
+    build: str
+    changes: list[ChangeModel]
+
+
+def group_changes_by_pr(newest_build: NewestBuildModel):
+    pr_changes: DefaultDict[int, list[ChangeModel]] = defaultdict(list)
+
+    for change in newest_build.changes:
+        pr_changes[change.pr_number].append(change)
+
+    prs = [Pr(pr_number, changes) for pr_number, changes in pr_changes.items()]
+    return prs
+
+
+def format_changelog(prs: list[Pr], build: str) -> str:
+    final_string = f"# Build {build}"
+
+    if not prs:
+        final_string += "\n\nThis build likely contains only internal changes. See the previous build for changelog."
+        return final_string
+
+    for pr in prs:
+        final_string += f"\n\n## PR #{pr.pr_number} (<{pr.changes[0].pr_url}>)"
+        final_string += f"\nby {pr.changes[0].author_username}\n"
+
+        for change in pr.changes:
+            final_string += f"\n{format_change(change)}"
+    return final_string
+
+
+def format_change(change: ChangeModel) -> str:
+    emoji = category_to_emoji.get(change.category, ':question:')
+    return f"- {emoji} {change.description}"
+
+
+class DiscordChangelogPoster:
+    def __init__(self, config: Config):
+        self.changelog_webhook = config.changelog_webhook
+        self.newest_build_url = config.newest_build_api_url
+
+    def post_changelog(self, message: str):
+        wh_data = {
+            "content": message,
+            # disallow any pings
+            "allowed_mentions": {"parse": []}
+        }
+
+        response = requests.post(self.changelog_webhook, json=wh_data)
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            log.error(f"Failed to post new build to the changelog webhook: {e}")
+            log.error(response.json())
+            raise
+
+    def fetch_newest_build(self) -> NewestBuildModel:
+        resp = requests.get(self.newest_build_url)
+        try:
+            resp.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            log.error(f"Failed to fetch newest build from API: {e}")
+            log.error(resp.json())
+            raise
+
+        data = resp.json()
+        return NewestBuildModel(
+            build=data["build"],
+            changes=[
+                ChangeModel(
+                    author_username=change["author_username"],
+                    description=change["description"],
+                    pr_url=change["pr_url"],
+                    pr_number=int(change["pr_number"]),
+                    category=change["category"],
+                    build=change["build"],
+                    date_added=change["date_added"],
+                )
+                for change in data["changes"]
+            ]
+        )
+
+    def start_posting(self):
+        log.info("Starting changelog posting")
+        newest_build = self.fetch_newest_build()
+        prs = group_changes_by_pr(newest_build)
+        message = format_changelog(prs, newest_build.build)
+        self.post_changelog(message)

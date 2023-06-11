@@ -20,6 +20,8 @@ class Config(ConfigBase):
     docker_username: str
     changelog_api_url: str
     changelog_api_key: str
+    changelog_webhook: str
+    newest_build_api_url: str
 
     git_url = "https://github.com/unitystation/unitystation.git"
     git_branch = Var(DEFAULT_BRANCH, arg="branch")
