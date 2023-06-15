@@ -76,19 +76,23 @@ class DiscordChangelogPoster:
         self.newest_build_url = config.newest_build_api_url
 
     def post_changelog(self, message: str):
-        wh_data = {
-            "content": message,
-            # disallow any pings
-            "allowed_mentions": {"parse": []}
-        }
+        message_chunks = [message[i:i + 2000] for i in range(0, len(message), 2000)]
 
-        response = requests.post(self.changelog_webhook, json=wh_data)
-        try:
-            response.raise_for_status()
-        except requests.exceptions.HTTPError as e:
-            log.error(f"Failed to post new build to the changelog webhook: {e}")
-            log.error(response.json())
-            raise
+        for chunk in message_chunks:
+            wh_data = {
+                "content": chunk,
+                # disallow any pings
+                "allowed_mentions": {"parse": []}
+            }
+
+            response = requests.post(self.changelog_webhook, json=wh_data)
+            try:
+                response.raise_for_status()
+            except requests.exceptions.HTTPError as e:
+                log.error(f"Failed to post new build to the changelog webhook. See console for more information.")
+                print(f"Failed to post new build to the changelog webhook: {e}")
+                log.error(response.json())
+                raise
 
     def fetch_newest_build(self) -> NewestBuildModel:
         resp = requests.get(self.newest_build_url)
