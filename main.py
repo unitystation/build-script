@@ -24,7 +24,7 @@ def _real_main(config: Config) -> None:
         Licenser(config)
         return
 
-    if args["tag_as_stable"]:
+    if args["stable"]:
         tag_as_stable()
         return
 
