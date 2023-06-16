@@ -5,7 +5,7 @@ from typing import Optional
 
 from .config_base import ConfigBase, Var
 
-__all__ = ("Config",)
+__all__ = ("Config", "DEFAULT_BRANCH")
 
 DEFAULT_BRANCH = "develop"
 

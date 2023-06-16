@@ -64,6 +64,11 @@ ap.add_argument(
     action="store_true",
     help="Run build until completion without uploading to FTP",
 )
+ap.add_argument(
+    "--stable",
+    action="store_true",
+    help="Tag current build as stable and push to DockerHub with the stable tag",
+)
 
 args = vars(ap.parse_args())
 

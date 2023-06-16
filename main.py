@@ -1,6 +1,6 @@
 import logging
 
-from usautobuild.actions import ApiCaller, Builder, Dockerizer, Gitter, Licenser, Uploader, DiscordChangelogPoster
+from usautobuild.actions import ApiCaller, Builder, Dockerizer, Gitter, Licenser, Uploader, DiscordChangelogPoster, tag_as_stable
 from usautobuild.cli import args
 from usautobuild.config import Config
 from usautobuild.logger import Logger
@@ -22,6 +22,10 @@ def main() -> None:
 def _real_main(config: Config) -> None:
     if args["get_license"]:
         Licenser(config)
+        return
+
+    if args["tag_as_stable"]:
+        tag_as_stable()
         return
 
     log.info("Launched Build Bot version %s", git_version())

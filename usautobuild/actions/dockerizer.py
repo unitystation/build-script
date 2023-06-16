@@ -31,11 +31,18 @@ class Dockerizer:
 
         shutil.copytree(self.config.output_dir / "linuxserver", path)
 
+    def prune_older_images(self) -> None:
+        log.debug("Pruning older images...")
+        if status := run_process_shell(
+                r"docker images | grep 'unitystation' | awk '{print $3}' | xargs docker rmi"
+        ):
+            log.warning(f"Some images could not be removed. Maybe they are being used by running containers! {status}")
+
     def make_images(self) -> None:
         log.debug("Creating images...")
 
         if status := run_process_shell(
-            f"docker image prune -f && docker build "
+            f"docker build "
             f"-t unitystation/unitystation:{self.config.build_number} "
             f"-t unitystation/unitystation:{self.config.git_branch} Docker"
         ):
@@ -61,6 +68,7 @@ class Dockerizer:
         log.debug("Starting docker process")
         self.copy_dockerfile()
         self.copy_server_build()
+        self.prune_older_images()
         self.make_images()
         self.push_images()
         log.info(
