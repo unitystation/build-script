@@ -59,8 +59,8 @@ class Builder:
             raise InvalidProjectPath()
 
         streaming_assets = self.config.project_path / "Assets" / "StreamingAssets"
-        build_info = streaming_assets / "config" / "buildinfo.json"
-        config_json = streaming_assets / "config" / "config.json"
+        build_info = streaming_assets / "Config" / "buildinfo.json"
+        config_json = streaming_assets / "Config" / "config.json"
 
         try:
             with open(build_info, "r") as f:
