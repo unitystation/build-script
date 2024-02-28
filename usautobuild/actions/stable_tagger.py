@@ -1,4 +1,5 @@
 from logging import getLogger
+
 from usautobuild.utils import run_process_shell
 
 log = getLogger("usautobuild")
@@ -7,10 +8,7 @@ log = getLogger("usautobuild")
 def tag_as_stable():
     log.info("Pushing a stable build from the latest build!")
 
-    if status := run_process_shell(
-        f"docker build "
-        f"-t unitystation/unitystation:stable Docker"
-    ):
+    if status := run_process_shell("docker build -t unitystation/unitystation:stable Docker"):
         raise Exception(f"Build failed: {status}")
 
     if status := run_process_shell(
@@ -20,7 +18,5 @@ def tag_as_stable():
     ):
         raise Exception(f"Docker login failed: {status}")
 
-    if status := run_process_shell(
-        f"docker push unitystation/unitystation:stable"
-    ):
+    if status := run_process_shell("docker push unitystation/unitystation:stable"):
         raise Exception(f"Push failed: {status}")
