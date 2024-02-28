@@ -1,6 +1,15 @@
 import logging
 
-from usautobuild.actions import ApiCaller, Builder, Dockerizer, Gitter, Licenser, Uploader, DiscordChangelogPoster, tag_as_stable
+from usautobuild.actions import (
+    ApiCaller,
+    Builder,
+    DiscordChangelogPoster,
+    Dockerizer,
+    Gitter,
+    Licenser,
+    Uploader,
+    tag_as_stable,
+)
 from usautobuild.cli import args
 from usautobuild.config import Config
 from usautobuild.logger import Logger

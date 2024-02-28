@@ -63,6 +63,4 @@ class Dockerizer:
         self.copy_server_build()
         self.make_images()
         self.push_images()
-        log.info(
-            "Process finished, a new staging build has been deployed and should " "shortly be present on the server."
-        )
+        log.info("Process finished, a new staging build has been deployed and should shortly be present on the server.")

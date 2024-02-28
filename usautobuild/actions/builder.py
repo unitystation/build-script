@@ -6,6 +6,8 @@ import time
 from logging import getLogger
 from pathlib import Path
 
+import humanize
+
 from usautobuild.config import Config
 from usautobuild.exceptions import BuildFailed, InvalidProjectPath, MissingLicenseFile, NugetRestoreFailed
 from usautobuild.utils import git_version, run_process_shell
@@ -173,8 +175,8 @@ class Builder:
             raise NugetRestoreFailed(self.config.project_path)
 
     def start_building(self) -> None:
-        log.info("Starting a new build: %s", git_version(directory=self.config.project_path, brief=False))
-        time_building_start = time.time()
+        log.info("Building version: %s", git_version(directory=self.config.project_path, brief=False))
+        start = time.time()
 
         self.check_license()
         self.clean_builds_folder()
@@ -184,20 +186,16 @@ class Builder:
         self.restore_nuget_packages()
 
         for target in self.config.target_platforms:
-            log.debug(f"Starting build for {target}...")
-            time_target = time.time()
+            log.debug("Building %s", target)
 
+            start_target = time.time()
             try:
                 self.build(target)
-            except BuildFailed:
+            except Exception as e:
                 if self.config.abort_on_build_fail:
-                    time_final_target = time.time() - time_target
-                    time_final_build = time.time() - time_building_start
-                    log.error(f"Build for {target} failed and config is set to abort on fail!\n Build Time Took: {time_final_target:.2f}.\n Total Time Took: {time_final_build:.2f}")
+                    log.error("Abort: %s", e)
                     raise
-            else:
-                time_final_build = time.time() - time_target
-                log.info(f"Finished build for {target}. Time took: {time_final_build:.2f}")
+            finally:
+                log.info("%s duration: %s", target, humanize.naturaltime(time.time() - start_target))
 
-        time_building_final = time.time() - time_building_start
-        log.info(f"Finished building!\nTotal Time Took: {time_building_final:.2f}")
+        log.info("Finished building in %s", humanize.naturaltime(time.time() - start))

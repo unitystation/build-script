@@ -3,8 +3,9 @@ from dataclasses import dataclass
 from logging import getLogger
 from typing import DefaultDict
 
-from usautobuild.config import Config
 import requests
+
+from usautobuild.config import Config
 
 log = getLogger("usautobuild")
 
@@ -66,7 +67,7 @@ def format_changelog(prs: list[Pr], build: str) -> str:
 
 
 def format_change(change: ChangeModel) -> str:
-    emoji = category_to_emoji.get(change.category, ':question:')
+    emoji = category_to_emoji.get(change.category, ":question:")
     return f"- {emoji} {change.description}"
 
 
@@ -76,20 +77,20 @@ class DiscordChangelogPoster:
         self.newest_build_url = config.newest_build_api_url
 
     def post_changelog(self, message: str):
-        message_chunks = [message[i:i + 2000] for i in range(0, len(message), 2000)]
+        message_chunks = [message[i : i + 2000] for i in range(0, len(message), 2000)]
 
         for chunk in message_chunks:
             wh_data = {
                 "content": chunk,
                 # disallow any pings
-                "allowed_mentions": {"parse": []}
+                "allowed_mentions": {"parse": []},
             }
 
             response = requests.post(self.changelog_webhook, json=wh_data)
             try:
                 response.raise_for_status()
             except requests.exceptions.HTTPError as e:
-                log.error(f"Failed to post new build to the changelog webhook. See console for more information.")
+                log.error("Failed to post new build to the changelog webhook. See console for more information.")
                 print(f"Failed to post new build to the changelog webhook: {e}")
                 log.error(response.json())
                 raise
@@ -117,7 +118,7 @@ class DiscordChangelogPoster:
                     date_added=change["date_added"],
                 )
                 for change in data["changes"]
-            ]
+            ],
         )
 
     def start_posting(self):
