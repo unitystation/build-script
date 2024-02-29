@@ -40,14 +40,13 @@ class NewestBuildModel:
     changes: list[ChangeModel]
 
 
-def group_changes_by_pr(newest_build: NewestBuildModel):
+def group_changes_by_pr(newest_build: NewestBuildModel) -> list[Pr]:
     pr_changes: DefaultDict[int, list[ChangeModel]] = defaultdict(list)
 
     for change in newest_build.changes:
         pr_changes[change.pr_number].append(change)
 
-    prs = [Pr(pr_number, changes) for pr_number, changes in pr_changes.items()]
-    return prs
+    return [Pr(pr_number, changes) for pr_number, changes in pr_changes.items()]
 
 
 def format_changelog(prs: list[Pr], build: str) -> str:
@@ -76,7 +75,7 @@ class DiscordChangelogPoster:
         self.changelog_webhook = config.changelog_webhook
         self.newest_build_url = config.newest_build_api_url
 
-    def post_changelog(self, message: str):
+    def post_changelog(self, message: str) -> None:
         message_chunks = [message[i : i + 2000] for i in range(0, len(message), 2000)]
 
         for chunk in message_chunks:
@@ -86,21 +85,21 @@ class DiscordChangelogPoster:
                 "allowed_mentions": {"parse": []},
             }
 
-            response = requests.post(self.changelog_webhook, json=wh_data)
+            response = requests.post(self.changelog_webhook, json=wh_data, timeout=30)
             try:
                 response.raise_for_status()
             except requests.exceptions.HTTPError as e:
                 log.error("Failed to post new build to the changelog webhook. See console for more information.")
-                print(f"Failed to post new build to the changelog webhook: {e}")
+                log.error("%s", e, extra={"discord": False})
                 log.error(response.json())
                 raise
 
     def fetch_newest_build(self) -> NewestBuildModel:
-        resp = requests.get(self.newest_build_url)
+        resp = requests.get(self.newest_build_url, timeout=30)
         try:
             resp.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            log.error(f"Failed to fetch newest build from API: {e}")
+            log.error("Failed to fetch newest build from API: %s", e)
             log.error(resp.json())
             raise
 
@@ -121,7 +120,7 @@ class DiscordChangelogPoster:
             ],
         )
 
-    def start_posting(self):
+    def start_posting(self) -> None:
         log.info("Starting changelog posting")
         newest_build = self.fetch_newest_build()
         prs = group_changes_by_pr(newest_build)

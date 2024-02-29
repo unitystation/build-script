@@ -41,7 +41,7 @@ def _real_main(config: Config) -> None:
 
     if not config.release:
         log.warning("Running a debug build that will not be registered")
-        log.warning(f"If this is a mistake make sure to ping whoever started it to add --release flag {WARNING_GIF}")
+        log.warning("If this is a mistake make sure to ping whoever started it to add --release flag %s", WARNING_GIF)
 
     gitter = Gitter(config)
     builder = Builder(config)

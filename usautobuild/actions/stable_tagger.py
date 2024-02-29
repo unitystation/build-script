@@ -5,7 +5,7 @@ from usautobuild.utils import run_process_shell
 log = getLogger("usautobuild")
 
 
-def tag_as_stable():
+def tag_as_stable() -> None:
     log.info("Pushing a stable build from the latest build!")
 
     if status := run_process_shell("docker build -t unitystation/unitystation:stable Docker"):

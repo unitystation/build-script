@@ -9,14 +9,14 @@ from logging import getLogger
 from pathlib import Path
 from typing import Any, Optional, TypeVar, Union
 
-from .exceptions import InvalidConfigFile
+from .exceptions import InvalidConfigFileError
 
 __all__ = (
     "ConfigBase",
-    "BaseConversionException",
-    "TypeAnnotationNeeded",
-    "VariableMissing",
-    "VariableInvalid",
+    "BaseConversionError",
+    "TypeAnnotationNeededError",
+    "VariableMissingError",
+    "VariableInvalidError",
 )
 
 log = getLogger("usautobuild")
@@ -30,7 +30,7 @@ class _UnsetClass:
 _UNSET = _UnsetClass()
 
 
-class BaseConversionException(Exception):
+class BaseConversionError(Exception):
     __slots__ = (
         "var",
         "message",
@@ -52,17 +52,17 @@ class BaseConversionException(Exception):
         return f"{prefix}{self.message}"
 
 
-class TypeAnnotationNeeded(BaseConversionException):
+class TypeAnnotationNeededError(BaseConversionError):
     def __init__(self, message: str = "Need type annotation as there is no default value"):
         super().__init__(message)
 
 
-class VariableMissing(BaseConversionException):
+class VariableMissingError(BaseConversionError):
     def __init__(self, message: str = "Missing required value"):
         super().__init__(message)
 
 
-class VariableInvalid(BaseConversionException):
+class VariableInvalidError(BaseConversionError):
     def __init__(self, message: str = "Bad value"):
         super().__init__(message)
 
@@ -105,7 +105,7 @@ class Variable:
 
         try:
             return self._resolve(name, args, cfg, type_)
-        except BaseConversionException as e:
+        except BaseConversionError as e:
             e.name = name
             e.var = self
 
@@ -137,7 +137,7 @@ class Variable:
         """Best effort type guess from default"""
 
         if default is _UNSET:
-            raise TypeAnnotationNeeded
+            raise TypeAnnotationNeededError
 
         return type(default)
 
@@ -164,7 +164,7 @@ class Variable:
             return os.environ[env], True
 
         if self.default is _UNSET:
-            raise VariableMissing
+            raise VariableMissingError
 
         return self.default, False
 
@@ -181,10 +181,10 @@ class Variable:
         """Dumb env parsing"""
 
         if type_ is bool:
-            if value.lower() in ("0", "no", "off", "disable", "false"):
-                return False
-            else:
-                return True
+            return value.lower() not in ("0", "no", "off", "disable", "false")
+
+        if isinstance(type_, types.GenericAlias):
+            type_ = type_.__origin__
 
         if inspect.isclass(type_) and (typing.get_origin(type_) in (list, tuple) or issubclass(type_, (list, tuple))):
             if not value:
@@ -195,7 +195,7 @@ class Variable:
         try:
             return type_(value)
         except Exception as e:
-            raise VariableInvalid(str(e))
+            raise VariableInvalidError(str(e))
 
     @classmethod
     def convert_non_env(cls, value: Any, type_: Any) -> Any:
@@ -206,12 +206,12 @@ class Variable:
             try:
                 return cls.convert_from_union(value, type_)
             except Exception as e:
-                raise VariableInvalid(f"Unable to convert to any of union types: [{e}]")
+                raise VariableInvalidError(f"Unable to convert to any of union types: [{e}]")
 
         try:
             return type_(value)
         except Exception as e:
-            raise VariableInvalid(str(e))
+            raise VariableInvalidError(str(e))
 
     @staticmethod
     def convert_from_union(value: Any, type_: Union[Any]) -> Any:
@@ -228,7 +228,7 @@ class Variable:
                 except Exception as e:
                     errors.append(e)
 
-            raise VariableInvalid("; ".join(f"{tp}: {e}" for tp, e in zip(union_args, errors)))
+            raise VariableInvalidError("; ".join(f"{tp}: {e}" for tp, e in zip(union_args, errors)))
 
         return value
 
@@ -244,7 +244,7 @@ class Variable:
 T = TypeVar("T")
 
 
-def Var(default: T = _UNSET, *args: Any, **kwargs: Any) -> T:  # type: ignore[assignment]
+def Var(default: T = _UNSET, *args: Any, **kwargs: Any) -> T:  # type: ignore[assignment]  # noqa: N802
     """A helper function to assign Variable and forward default type"""
 
     return Variable(default, *args, **kwargs)  # type: ignore[return-value]
@@ -273,13 +273,13 @@ class ConfigBase:
             return {}
 
         try:
-            with open(config_file) as f:
+            with config_file.open() as f:
                 config = json.load(f)
         except json.JSONDecodeError as e:
-            raise InvalidConfigFile(f"Config contains invalid JSON: {e}")
+            raise InvalidConfigFileError(f"Config contains invalid JSON: {e}")
 
         if not isinstance(config, dict):
-            raise InvalidConfigFile("Config is not a mapping")
+            raise InvalidConfigFileError("Config is not a mapping")
 
         return config
 

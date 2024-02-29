@@ -30,7 +30,8 @@ def run_process_shell(command: str, stderr_on_failure: bool = False) -> int:
         command,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        shell=True,
+        # there is no user input
+        shell=True,  # noqa: S602
     ) as cmd:
         for line, is_stdout in iterate_output(cmd):
             if is_stdout:
@@ -117,10 +118,7 @@ def git_version(directory: Optional[Path] = None, brief: bool = True) -> str:
     repo = Repo(directory, search_parent_directories=True)
     last_commit = repo.commit()
 
-    if repo.is_dirty():
-        version = "[DIRTY] "
-    else:
-        version = ""
+    version = "[DIRTY] " if repo.is_dirty() else ""
 
     try:
         branch_name = str(repo.active_branch)
@@ -132,6 +130,6 @@ def git_version(directory: Optional[Path] = None, brief: bool = True) -> str:
     if not brief:
         time_delta = datetime.now(tz=last_commit.committed_datetime.tzinfo) - last_commit.committed_datetime
 
-        version += f" from {humanize.naturaltime(time_delta)} by {last_commit.author}: {str(last_commit.summary)}"
+        version += f" from {humanize.naturaltime(time_delta)} by {last_commit.author}: {last_commit.summary!s}"
 
     return version

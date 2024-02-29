@@ -9,7 +9,12 @@ from pathlib import Path
 import humanize
 
 from usautobuild.config import Config
-from usautobuild.exceptions import BuildFailed, InvalidProjectPath, MissingLicenseFile, NugetRestoreFailed
+from usautobuild.exceptions import (
+    BuildFailedError,
+    InvalidProjectPathError,
+    MissingLicenseFileError,
+    NugetRestoreFailedError,
+)
 from usautobuild.utils import git_version, run_process_shell
 
 exec_name = {
@@ -36,8 +41,8 @@ class Builder:
     def check_license(self) -> None:
         log.debug("Checking license file...")
         if not self.config.license_file.exists():
-            log.error(f"Missing license file at given directory: {self.config.license_file}")
-            raise MissingLicenseFile(self.config.license_file)
+            log.error("Missing license file at given directory: %s", self.config.license_file)
+            raise MissingLicenseFileError(self.config.license_file)
 
     def clean_builds_folder(self) -> None:
         path = self.config.output_dir
@@ -51,39 +56,39 @@ class Builder:
             try:
                 (Path.cwd() / self.config.output_dir / target).mkdir(exist_ok=True)
             except Exception as e:
-                log.error(f"Failed to create output folders because: {e}!")
+                log.error("Failed to create output folders because: %s!", e)
                 raise e
 
     def set_jsons_data(self) -> None:
         log.debug("Changing data in json files from the game...")
         if not self.config.project_path:
             log.error("Invalid path to unity project. Aborting...")
-            raise InvalidProjectPath()
+            raise InvalidProjectPathError()
 
         streaming_assets = self.config.project_path / "Assets" / "StreamingAssets"
         build_info = streaming_assets / "Config" / "buildinfo.json"
         config_json = streaming_assets / "Config" / "config.json"
 
         try:
-            with open(build_info, "r") as f:
+            with build_info.open("r") as f:
                 p_build_info = json.load(f)
         except FileNotFoundError:
             log.error("Couldn't find build info file!")
             raise
         try:
-            with open(config_json, "r") as f:
+            with config_json.open("r") as f:
                 p_config_json = json.load(f)
         except FileNotFoundError:
             log.error("Coudln't find game config file!")
             raise
 
-        with open(build_info, "w") as f:
+        with build_info.open("w") as f:
             p_build_info["BuildNumber"] = self.config.build_number
             p_build_info["ForkName"] = self.config.forkname
 
             json.dump(p_build_info, f, indent=4)
 
-        with open(config_json, "w") as f:
+        with config_json.open("w") as f:
             url = self.config.cdn_download_url
             p_config_json["WinDownload"] = url.format(
                 self.config.forkname, "StandaloneWindows64", self.config.build_number
@@ -101,7 +106,7 @@ class Builder:
         )
 
         try:
-            with open(prefab_file, encoding="UTF-8") as f:
+            with prefab_file.open(encoding="UTF-8") as f:
                 prefab = f.read()
         except FileNotFoundError:
             log.error("Coudn't find GameData prefab!")
@@ -109,7 +114,7 @@ class Builder:
 
         prefab = re.sub(r"DevBuild: \d", "DevBuild: 0", prefab)
 
-        with open(prefab_file, "w", encoding="UTF-8") as f:
+        with prefab_file.open("w", encoding="UTF-8") as f:
             f.write(prefab)
 
     def make_command(self, target: str) -> str:
@@ -154,7 +159,7 @@ class Builder:
 
         return target
 
-    def get_devBuild_flag(self, target: str) -> str:
+    def get_devBuild_flag(self, target: str) -> str:  # noqa: N802
         if target.lower() == "linuxserver":
             return "-devBuild -deepProfile"
 
@@ -162,17 +167,17 @@ class Builder:
 
     def build(self, target: str) -> None:
         command = self.make_command(target)
-        log.debug(f"Running command\n{command}\n")
+        log.debug("Running command\n%s\n", command)
 
         if run_process_shell(command):
-            raise BuildFailed(target)
+            raise BuildFailedError(target)
 
     def restore_nuget_packages(self) -> None:
         log.debug("Restoring nuget packages...")
         command = f"nugetforunity restore {self.config.project_path}"
 
         if run_process_shell(command, True):
-            raise NugetRestoreFailed(self.config.project_path)
+            raise NugetRestoreFailedError(self.config.project_path)
 
     def start_building(self) -> None:
         log.info("Building version: %s", git_version(directory=self.config.project_path, brief=False))

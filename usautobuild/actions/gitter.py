@@ -5,7 +5,7 @@ from typing import Any
 from git import RemoteProgress, Repo
 
 from usautobuild.config import Config
-from usautobuild.exceptions import NoChanges
+from usautobuild.exceptions import NoChangesError
 
 log = getLogger("usautobuild")
 
@@ -52,7 +52,7 @@ class Gitter:
 
         if last_commit == new_commit and not self.config.allow_no_changes:
             log.error("Couldn't find changes after updating repo. Aborting build!")
-            raise NoChanges(self.config.git_branch)
+            raise NoChangesError(self.config.git_branch)
 
     def start_gitting(self) -> None:
         self.prepare_git_directory()
