@@ -1,12 +1,10 @@
 from pathlib import Path
 
 
-class BaseError(Exception):
-    ...
+class BaseError(Exception): ...
 
 
-class InvalidConfigFileError(BaseError):
-    ...
+class InvalidConfigFileError(BaseError): ...
 
 
 class NoChangesError(BaseError):
