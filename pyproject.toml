@@ -38,8 +38,6 @@ ignore = [
     "B904",
     # asserts are useful in both tests and type checker persuasion
     "S101",
-    # it is annoying to annotate django Meta model properties as CalssVar for no reason
-    "RUF012",
     # treats a link with the word "password" in it as a hardcoded password
     "S105",
     # enforced by formatter
@@ -55,8 +53,6 @@ select = [
     "I",
     # flake8-bugbear
     "B",
-    # flake8-django
-    "DJ",
     # flake8-naming
     "N",
     # pyupgrade

@@ -15,7 +15,7 @@ import time
 
 from logging import handlers
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, ClassVar, Optional
 
 import requests
 
@@ -30,7 +30,7 @@ __all__ = (
 
 
 class LogLevel:
-    LEVELS = {
+    LEVELS: ClassVar[dict[str, int]] = {
         "DEBUG": logging.DEBUG,
         "INFO": logging.INFO,
         "WARNING": logging.WARNING,
@@ -111,7 +111,7 @@ class DiscordFilter:
 
 
 class DicordFormatter(logging.Formatter):
-    uwu_replacements = {
+    uwu_replacements: ClassVar[dict[str, str]] = {
         "r": "w",
         "!": "! owo",
         "v": "w",
