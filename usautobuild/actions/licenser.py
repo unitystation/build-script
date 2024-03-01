@@ -36,9 +36,9 @@ class Licenser:
         )
 
     def run_command(self, command: str) -> None:
-        log.debug(f"Running command \n{command}\n")
+        log.debug("Running command \n%s\n", command)
 
-        with Popen(command, stdout=PIPE, stderr=PIPE, shell=True) as cmd:
+        with Popen(command, stdout=PIPE, stderr=PIPE, shell=True) as cmd:  # noqa: S602
             for line, is_stdout in iterate_output(cmd):
                 if is_stdout:
                     log.debug(line)

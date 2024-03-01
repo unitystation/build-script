@@ -23,4 +23,4 @@ from usautobuild.config import Config
     clear=True,
 )
 def config() -> Config:
-    return Config({"config_file": Path(".")})
+    return Config({"config_file": Path()})

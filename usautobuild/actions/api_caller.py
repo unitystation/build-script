@@ -25,11 +25,11 @@ class ApiCaller:
             "secret_token": self.api_key,
         }
 
-        response = requests.post(self.api_url, data=data)
+        response = requests.post(self.api_url, data=data, timeout=60)
         try:
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            log.error(f"Failed to post new version to changelog api: {e}")
+            log.error("Failed to post new version to changelog api: %s", e)
             log.error(response.json())
             raise
 

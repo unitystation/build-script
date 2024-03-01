@@ -1,3 +1,5 @@
+# ruff: noqa: S311
+
 from __future__ import annotations
 
 import argparse
@@ -13,7 +15,7 @@ import time
 
 from logging import handlers
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, ClassVar, Optional
 
 import requests
 
@@ -28,7 +30,7 @@ __all__ = (
 
 
 class LogLevel:
-    LEVELS = {
+    LEVELS: ClassVar[dict[str, int]] = {
         "DEBUG": logging.DEBUG,
         "INFO": logging.INFO,
         "WARNING": logging.WARNING,
@@ -50,12 +52,12 @@ class Logger:
 
     __slots__ = (
         "_level",
-        "_discord_logger",
+        "_discord_handler",
     )
 
     def __init__(self, level: int) -> None:
         self._level = level
-        self._discord_logger: Optional[BufferedDiscordHandler] = None
+        self._discord_handler: Optional[BufferedDiscordHandler] = None
 
     def __enter__(self) -> Logger:
         if Logger.__logger_initialized:
@@ -85,21 +87,31 @@ class Logger:
         return self
 
     def __exit__(self, *_args: Any) -> None:
-        if (discord_logger := self._discord_logger) is not None:
+        if (discord_logger := self._discord_handler) is not None:
             discord_logger.stop()
 
     def configure(self, config: Config) -> None:
         """Configure complex loggers requiring config"""
 
         if (discord_webhook := config.discord_webhook) is not None:
-            self._discord_logger = BufferedDiscordHandler(discord_webhook)
-            self._discord_logger.setFormatter(DicordFormatter())
-            self._discord_logger.setLevel(logging.INFO)
-            log.addHandler(self._discord_logger)
+            self._discord_handler = BufferedDiscordHandler(discord_webhook)
+            self._discord_handler.addFilter(DiscordFilter())
+            self._discord_handler.setFormatter(DicordFormatter())
+            self._discord_handler.setLevel(logging.INFO)
+            log.addHandler(self._discord_handler)
+
+
+class DiscordFilter:
+    @staticmethod
+    def filter(record: logging.LogRecord) -> bool:
+        if not hasattr(record, "discord"):
+            return True
+
+        return record.discord  # type: ignore[no-any-return]
 
 
 class DicordFormatter(logging.Formatter):
-    uwu_replacements = {
+    uwu_replacements: ClassVar[dict[str, str]] = {
         "r": "w",
         "!": "! owo",
         "v": "w",
@@ -165,7 +177,7 @@ class DicordFormatter(logging.Formatter):
             else:
                 emoji = "\N{WARNING SIGN}"
         else:
-            if custom_emoji:
+            if custom_emoji:  # noqa: SIM108
                 emoji = random.choice(
                     [
                         "<:ai:502254086507200524>",
@@ -297,7 +309,7 @@ class BufferedDiscordHandler(logging.Handler):
         else:
             wh_data["avatar_url"] = "https://i.redd.it/xomd902beh311.png"
 
-        resp = requests.post(self._url, json=wh_data)
+        resp = requests.post(self._url, json=wh_data, timeout=10)
 
         return resp.status_code == 204
 

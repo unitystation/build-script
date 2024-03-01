@@ -5,20 +5,20 @@ description = ""
 authors = ["Andrés Riquelme <andresfranco.rs@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.11"
 requests = "^2.25.0"
 gitpython = "^3.1.29"
 humanize = "^4.5.0"
 
-[tool.poetry.group.dev.dependencies]
-black = "^22.10.0"
-mypy = "^0.991"
-flake8 = "^6.0.0"
-flake8-bugbear = "^22.10.27"
-flake8-unused-arguments = "^0.0.12"
-pre-commit = "^2.20.0"
-isort = "^5.10.1"
+[tool.poetry.group.lint.dependencies]
+pre-commit = "3.*"
+ruff = "0.3.*"
+
+[tool.poetry.group.typecheck.dependencies]
+mypy = "1.*"
 types-requests = "^2.28.11.5"
+
+[tool.poetry.group.test.dependencies]
 pytest = "^7.2.0"
 pytest-cov = "^4.0.0"
 
@@ -26,20 +26,60 @@ pytest-cov = "^4.0.0"
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.isort]
-profile = "black"
-line_length = 121
-atomic = true
-combine_as_imports = true
-lines_between_types = 1
+[tool.ruff]
+line-length = 121
 
-[tool.black]
-target-version = ['py310']
-line_length = 121
+[tool.ruff.lint]
+ignore = [
+    # doesn't like Optional
+    # https://github.com/charliermarsh/ruff/issues/4858
+    "UP007",
+    # explicit raise from might be a bit too verbose, disable for now
+    "B904",
+    # asserts are useful in both tests and type checker persuasion
+    "S101",
+    # treats a link with the word "password" in it as a hardcoded password
+    "S105",
+    # enforced by formatter
+    "E501",
+]
+select = [
+    # pyflakes
+    "F",
+    # pycodestyle
+    "E",
+    "W",
+    # isort
+    "I",
+    # flake8-bugbear
+    "B",
+    # flake8-naming
+    "N",
+    # pyupgrade
+    "UP",
+    # flake8-bandit
+    "S",
+    # flake8-comprehensions
+    "C4",
+    # flake8-logging-format
+    "G",
+    # flake8-simplify
+    "SIM",
+    # flake8-use-pathlib
+    "PTH",
+    # ruff
+    "RUF",
+]
+fixable = [
+    "I",
+]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+lines-between-types = 1
+
 
 [tool.mypy]
-python_version = "3.10"
-
 show_column_numbers = true
 show_error_codes = true
 

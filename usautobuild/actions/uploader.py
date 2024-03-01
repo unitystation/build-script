@@ -14,14 +14,15 @@ class Uploader:
         self.config = config
 
     def upload_to_cdn(self) -> None:
-        ftp = FTP()
+        # TODO: consider SFTP
+        ftp = FTP()  # noqa: S321
 
         try:
             log.debug("Trying to connect to CDN...")
 
             ftp.connect(self.config.cdn_host, 21, timeout=60)
             ftp.login(self.config.cdn_user, self.config.cdn_password)
-            log.debug(f"CDN says: {ftp.getwelcome()}")
+            log.debug("CDN says: %s", ftp.getwelcome())
 
             # ftp.rmd(f"/unitystation/{self.forkname}")
             # ftp.mkd(f"/unitystation/{self.forkname}")
@@ -43,15 +44,15 @@ class Uploader:
         try:
             ftp.mkd(f"/unitystation/{self.config.forkname}/{target}/")
         except error_perm:
-            log.debug(f"Folder for {self.config.forkname} already exists!")
+            log.debug("Folder for %s already exists!", self.config.forkname)
         except Exception as e:
             raise e
 
         upload_path = f"/unitystation/{self.config.forkname}/{target}/{self.config.build_number}.zip"
         local_file = (self.config.output_dir / target).with_suffix(".zip")
         try:
-            with open(local_file, "rb") as zip_file:
-                log.debug(f"Uploading {target}...")
+            with local_file.open("rb") as zip_file:
+                log.debug("Uploading %s...", target)
                 ftp.storbinary(f"STOR {upload_path}", zip_file)
         except all_errors as e:
             if "timed out" in str(e):
@@ -61,7 +62,7 @@ class Uploader:
                 log.debug("FTP connection timed out, retrying...")
                 self.attempt_ftp_upload(ftp, target, attempt=attempt + 1)
             else:
-                log.error(f"Error trying to upload {local_file}")
+                log.error("Error trying to upload %s", local_file)
                 log.error(str(e))
 
     def zip_build_folder(self, target: str) -> None:

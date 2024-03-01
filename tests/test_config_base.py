@@ -6,8 +6,8 @@ from unittest import mock
 
 import pytest
 
-from usautobuild.config_base import ConfigBase, Var, VariableMissing
-from usautobuild.exceptions import InvalidConfigFile
+from usautobuild.config_base import ConfigBase, Var, VariableMissingError
+from usautobuild.exceptions import InvalidConfigFileError
 
 
 @pytest.fixture(autouse=True)
@@ -28,12 +28,12 @@ def test_config_read_config_file():
 
 
 def test_config_read_config_file_malformed():
-    with pytest.raises(InvalidConfigFile, match="invalid"):
+    with pytest.raises(InvalidConfigFileError, match="invalid"):
         ConfigBase.read_config(Path(__file__).parent / "config_malformed.json")
 
 
 def test_config_read_config_file_not_map():
-    with pytest.raises(InvalidConfigFile, match="not a map"):
+    with pytest.raises(InvalidConfigFileError, match="not a map"):
         ConfigBase.read_config(Path(__file__).parent / "config_not_map.json")
 
 
@@ -67,7 +67,7 @@ def test_config_annotated_values():
 
     cfg = Config(
         {
-            "config_file": Path("."),
+            "config_file": Path(),
             "a": "1",
             "c": "eggs",
         },
@@ -85,7 +85,7 @@ def test_config_non_annotated_values():
 
     cfg = Config(
         {
-            "config_file": Path("."),
+            "config_file": Path(),
             "a": "2",
         },
     )
@@ -98,8 +98,8 @@ def test_config_variable_missing():
     class Config(ConfigBase):
         a: int
 
-    with pytest.raises(VariableMissing):
-        Config({"config_file": Path(".")})
+    with pytest.raises(VariableMissingError):
+        Config({"config_file": Path()})
 
 
 @mock.patch.dict(os.environ, {"FOO": "1337"})
@@ -109,37 +109,29 @@ def test_config_attributes_properly_skipped():
 
         _private_var = "spam"
 
-        def method(self):
-            ...
+        def method(self): ...
 
-        async def async_method(self):
-            ...
+        async def async_method(self): ...
 
         @classmethod
-        def class_method(cls):
-            ...
+        def class_method(cls): ...
 
         @staticmethod
-        def static_method():
-            ...
+        def static_method(): ...
 
         @property
-        def property_method(self):
-            ...
+        def property_method(self): ...
 
         @property_method.setter  # type: ignore[attr-defined]
-        def setter(self):
-            ...
+        def setter(self): ...
 
         @property_method.getter  # type: ignore[attr-defined]
-        def getter(self):
-            ...
+        def getter(self): ...
 
         @property_method.deleter  # type: ignore[attr-defined]
-        def deleter(self):
-            ...
+        def deleter(self): ...
 
-    cfg = Config({"config_file": Path(".")})
+    cfg = Config({"config_file": Path()})
 
     assert cfg.foo == 1337
     assert cfg._private_var == "spam"

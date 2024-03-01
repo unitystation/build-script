@@ -1,3 +1,5 @@
+# ruff: noqa: RUF012
+
 import datetime
 
 from pathlib import Path

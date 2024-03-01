@@ -5,7 +5,7 @@ from unittest import mock
 
 import pytest
 
-from usautobuild.config_base import TypeAnnotationNeeded, Var, Variable, VariableInvalid, VariableMissing
+from usautobuild.config_base import TypeAnnotationNeededError, Var, Variable, VariableInvalidError, VariableMissingError
 
 
 @pytest.fixture(autouse=True)
@@ -39,7 +39,7 @@ def test_variable_guess():
 def test_variable_guess_expects_default_or_type():
     var = Variable()
 
-    with pytest.raises(TypeAnnotationNeeded):
+    with pytest.raises(TypeAnnotationNeededError):
         var.resolve("", {}, {})
 
 
@@ -57,7 +57,7 @@ def test_variable_env_name_uses_overwrite():
 
 
 def test_variable_convert_env_invalid():
-    with pytest.raises(VariableInvalid):
+    with pytest.raises(VariableInvalidError):
         Variable.convert_env("25", object)
 
 
@@ -87,10 +87,9 @@ def test_variable_convert_env_list_str():
 
 @pytest.mark.xfail(reason="strict tuples are not yet implemented")
 def test_variable_convert_env_tuple_str():
-    # tuple bug: https://github.com/python/mypy/issues/11098
-    assert Variable.convert_env("1,2", tuple[str, str]) == ["1", "2"]  # type: ignore[misc]
+    assert Variable.convert_env("1,2", tuple[str, str]) == ["1", "2"]
     assert Variable.convert_env("", tuple) == []
-    assert Variable.convert_env(",,,,", tuple[str, str, str, str]) == ["", "", "", "", ""]  # type: ignore[misc]
+    assert Variable.convert_env(",,,,", tuple[str, str, str, str]) == ["", "", "", "", ""]
 
     with pytest.raises(ValueError):
         Variable.convert_env("3,4,5", tuple[str])
@@ -116,7 +115,7 @@ def test_variable_convert_env_callable():
 
 
 def test_variable_convert_non_env_invalid():
-    with pytest.raises(VariableInvalid):
+    with pytest.raises(VariableInvalidError):
         Variable.convert_non_env("definitely not int", int)
 
 
@@ -141,7 +140,7 @@ def test_variable_convert_non_env_union():
 
 
 def test_variable_convert_non_env_no_valid_options():
-    with pytest.raises(VariableInvalid, match="convert to any of union types"):
+    with pytest.raises(VariableInvalidError, match="convert to any of union types"):
         Variable.convert_non_env("test", int | float)
 
 
@@ -161,7 +160,7 @@ def test_variable_convert_non_env_callable():
 def test_variable_fetch_prefers_nothing_over_segfault():
     var = Variable()
 
-    with pytest.raises(VariableMissing):
+    with pytest.raises(VariableMissingError):
         var.fetch_value("nonexistent", {}, {})
 
 
@@ -219,13 +218,13 @@ def test_variable_resolve_adds_more_context_to_errors():
 
     extra_info = rf"^\[{var.env_name(name)} / {name}\] "
 
-    with pytest.raises(TypeAnnotationNeeded, match=extra_info):
+    with pytest.raises(TypeAnnotationNeededError, match=extra_info):
         var.resolve(name, {}, {})
 
-    with pytest.raises(VariableMissing, match=extra_info):
+    with pytest.raises(VariableMissingError, match=extra_info):
         var.resolve(name, {}, {}, int)
 
-    with pytest.raises(VariableInvalid, match=extra_info):
+    with pytest.raises(VariableInvalidError, match=extra_info):
         var.resolve(name, {name: "not int"}, {}, int)
 
 
@@ -288,11 +287,11 @@ def test_variable_resolve_sets_env():
 
 
 def test_variable_resolve_sets_env_with_overwrite():
-    var = Variable(env="idk", set_env=True)
+    var = Variable(env="IDK", set_env=True)
 
     var.resolve("foo-bar-baz", {}, {"foo-bar-baz": 7777}, int)
 
-    assert os.environ["idk"] == "7777"
+    assert os.environ["IDK"] == "7777"
 
 
 def test_variable_resolve_does_not_set_env():
