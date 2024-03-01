@@ -201,6 +201,6 @@ class Builder:
                     log.error("Abort: %s", e)
                     raise
             finally:
-                log.info("%s duration: %s", target, humanize.naturaltime(time.time() - start_target))
+                log.info("%s duration: %s", target, humanize.naturaldelta(time.time() - start_target))
 
-        log.info("Finished building in %s", humanize.naturaltime(time.time() - start))
+        log.info("Finished building in %s", humanize.naturaldelta(time.time() - start))
