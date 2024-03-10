@@ -51,8 +51,10 @@ class Dockerizer:
         ):
             raise Exception(f"Docker login failed: {status}")
 
-        if status := run_process_shell("docker push unitystation/unitystation --all-tags"):
-            raise Exception(f"Docker push failed: {status}")
+        if status := run_process_shell(f"docker push unitystation/unitystation:{self.config.build_number}"):
+            raise Exception(f"Docker push build failed: {status}")
+        if status := run_process_shell(f"docker push unitystation/unitystation:{self.config.git_branch}"):
+            raise Exception(f"Docker push branch failed: {status}")
 
     def start_dockering(self) -> None:
         if self.config.dry_run:
