@@ -172,13 +172,6 @@ class Builder:
         if run_process_shell(command):
             raise BuildFailedError(target)
 
-    def restore_nuget_packages(self) -> None:
-        log.debug("Restoring nuget packages...")
-        command = f"nugetforunity restore {self.config.project_path}"
-
-        if run_process_shell(command, True):
-            raise NugetRestoreFailedError(self.config.project_path)
-
     def start_building(self) -> None:
         log.info("Building version: %s", git_version(directory=self.config.project_path, brief=False))
         start = time.time()
@@ -188,7 +181,6 @@ class Builder:
         self.create_builds_folders()
         self.set_jsons_data()
         self.set_addressables_mode()
-        self.restore_nuget_packages()
 
         for target in self.config.target_platforms:
             log.debug("Building %s", target)
