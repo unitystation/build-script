@@ -12,8 +12,7 @@ from usautobuild.config import Config
 from usautobuild.exceptions import (
     BuildFailedError,
     InvalidProjectPathError,
-    MissingLicenseFileError,
-    NugetRestoreFailedError,
+    MissingLicenseFileError
 )
 from usautobuild.utils import git_version, run_process_shell
 
@@ -161,7 +160,7 @@ class Builder:
 
     def get_devBuild_flag(self, target: str) -> str:  # noqa: N802
         if target.lower() == "linuxserver":
-            return "-devBuild -deepProfile"
+            return "-devBuild -deepProfile -standaloneBuildSubtarget Server"
 
         return ""
 
