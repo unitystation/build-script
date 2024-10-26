@@ -116,8 +116,12 @@ class Builder:
         with prefab_file.open("w", encoding="UTF-8") as f:
             f.write(prefab)
 
+    def make_image_tag(self, target: str):
+        hub_project = "unityci/editor:"
+        return f"{hub_project}{self.config.unity_version}{'-ubuntu-' if target == 'linuxserver' else '' }{platform_image[target]}"
+
     def make_command(self, target: str) -> str:
-        image = f"unityci/editor:{self.config.unity_version}{platform_image[target]}"
+        image = self.make_image_tag(target)
 
         return (
             # pull first because docker run does not have -q alternative
