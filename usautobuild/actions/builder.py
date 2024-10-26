@@ -118,8 +118,8 @@ class Builder:
 
     def make_command(self, target: str) -> str:
         base_image = "unityci/editor"
-        platform_suffix = "-ubuntu" if target == "linuxserver" else ""
-        image = f"{base_image}:{self.config.unity_version}{platform_suffix}{platform_image[target]}"
+        platform_prefix = "ubuntu-" if target == "linuxserver" else ""
+        image = f"{base_image}:{platform_prefix}{self.config.unity_version}{platform_image[target]}"
 
         return (
             # pull first because docker run does not have -q alternative
