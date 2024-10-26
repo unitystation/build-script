@@ -24,10 +24,10 @@ exec_name = {
 }
 
 platform_image = {
-    "linuxserver": "-ubuntu-base-3.1",
-    "StandaloneLinux64": "-base-3.1",
-    "StandaloneWindows64": "-windows-mono-3.1",
-    "StandaloneOSX": "-mac-mono-3.1",
+    "linuxserver": "-base-3",
+    "StandaloneLinux64": "-base-3",
+    "StandaloneWindows64": "-windows-mono-3",
+    "StandaloneOSX": "-mac-mono-3",
 }
 
 log = getLogger("usautobuild")
@@ -117,7 +117,9 @@ class Builder:
             f.write(prefab)
 
     def make_command(self, target: str) -> str:
-        image = f"unityci/editor:{self.config.unity_version}{platform_image[target]}"
+        base_image = "unityci/editor"
+        platform_suffix = "-ubuntu" if target == "linuxserver" else ""
+        image = f"{base_image}:{self.config.unity_version}{platform_suffix}{platform_image[target]}"
 
         return (
             # pull first because docker run does not have -q alternative
