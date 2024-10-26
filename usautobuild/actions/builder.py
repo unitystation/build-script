@@ -30,6 +30,13 @@ platform_image = {
     "StandaloneOSX": "-mac-mono-3.1.0",
 }
 
+platform_subtarget = {
+    "linuxserver": "Server",
+    "StandaloneLinux64": "Player",
+    "StandaloneWindows64": "Player",
+    "StandaloneOSX": "Player",
+}
+
 log = getLogger("usautobuild")
 
 
@@ -150,6 +157,7 @@ class Builder:
             f"-projectPath /root/UnityProject "
             f"-buildTarget {self.get_real_target(target)} "
             f"-executeMethod BuildScript.BuildProject "
+            f"-standaloneBuildSubtarget {platform_subtarget[target]} "
             f"-customBuildPath {Path('/') / 'root' / 'builds' / target / exec_name[target]} "
             f"{self.get_devBuild_flag(target)}"
         )
@@ -162,7 +170,7 @@ class Builder:
 
     def get_devBuild_flag(self, target: str) -> str:  # noqa: N802
         if target.lower() == "linuxserver":
-            return "-devBuild -deepProfile -standaloneBuildSubtarget Server"
+            return "-devBuild -deepProfile"
 
         return ""
 
