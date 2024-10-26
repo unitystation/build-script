@@ -24,10 +24,10 @@ exec_name = {
 }
 
 platform_image = {
-    "linuxserver": "-base-3",
-    "StandaloneLinux64": "-base-3",
-    "StandaloneWindows64": "-windows-mono-3",
-    "StandaloneOSX": "-mac-mono-3",
+    "linuxserver": "-base-3.1",
+    "StandaloneLinux64": "-base-3.1",
+    "StandaloneWindows64": "-windows-mono-3.1",
+    "StandaloneOSX": "-mac-mono-3.1",
 }
 
 log = getLogger("usautobuild")
