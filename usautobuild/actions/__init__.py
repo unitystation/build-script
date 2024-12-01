@@ -6,7 +6,7 @@ from .gitter import Gitter
 from .licenser import Licenser
 from .stable_tagger import tag_as_stable
 from .uploader import Uploader
-
+from .good_files import good_files
 __all__ = (
     "ApiCaller",
     "Builder",
@@ -16,4 +16,5 @@ __all__ = (
     "Uploader",
     "DiscordChangelogPoster",
     "tag_as_stable",
+    "good_files",
 )

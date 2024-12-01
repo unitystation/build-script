@@ -14,7 +14,7 @@ DEFAULT_BRANCH = "develop"
 
 class Config(ConfigBase):
     release: bool = False
-
+    do_good_files : bool
     cdn_host: str
     cdn_user: str
     cdn_password: str
