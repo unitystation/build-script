@@ -132,13 +132,6 @@ class Uploader:
                 if target == "linuxserver":
                     log.info("Skipping target: %s", target)
                     continue
-
-                if target == "StandaloneLinux64":
-                    continue
-
-                if target == "StandaloneOSX":
-                    continue
-
                 
                 # Prepare and zip the target directory
                 target_path = good_files_dir / target

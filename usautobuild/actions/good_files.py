@@ -39,15 +39,7 @@ class good_files:
         
         for target in self.config.target_platforms:
             if target == "linuxserver":
-                print("Skipping %s", target)
-                continue
-
-            if target == "StandaloneLinux64":
-                print("Skipping %s", target)
-                continue
-
-            if target == "StandaloneOSX":
-                print("Skipping %s", target)
+                log.debug("Skipping %s", target)
                 continue
 
             
@@ -57,7 +49,7 @@ class good_files:
                 shutil.copytree(target_path, destination, dirs_exist_ok=True)
                 self.prepare_target(target, destination)
             else:
-                print("Target path %s does not exist or is not a directory", target_path)
+                log.warning("Target path %s does not exist or is not a directory", target_path)
 
     def check_version(self):
         version_file = Path.cwd() / "bundledDLL" / "version.txt"
