@@ -53,7 +53,7 @@ class GoodFiles:
         else:
             raise BuildFailedError("bundledDLL/version.txt not found")
 
-    def prepare_target(self, target, path):
+    def prepare_target(self, target: str, path: Path):
         if target == "StandaloneWindows64":
             self.prepare_windows(path)
         elif target == "StandaloneLinux64":
