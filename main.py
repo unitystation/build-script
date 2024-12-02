@@ -9,7 +9,7 @@ from usautobuild.actions import (
     Licenser,
     Uploader,
     tag_as_stable,
-    good_files
+    GoodFiles
 )
 from usautobuild.cli import args
 from usautobuild.config import Config
@@ -49,7 +49,7 @@ def _real_main(config: Config) -> None:
     uploader = Uploader(config)
     dockerizer = Dockerizer(config)
 
-    do_good_files = good_files(config)
+    do_good_files = GoodFiles(config)
 
     gitter.start_gitting()
 
