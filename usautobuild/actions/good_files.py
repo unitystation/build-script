@@ -25,15 +25,12 @@ class GoodFiles:
     def make_good_files_build(self) -> None:
         good_files_dir = Path(self.config.output_dir) / "good_files"
         good_files_dir.mkdir(parents=True, exist_ok=True)
-
         # Check if bundledDLL/version.txt exists and verify the version
         self.check_version()
-
         for target in self.config.target_platforms:
             if target == "linuxserver":
                 log.debug("Skipping %s", target)
                 continue
-
             target_path = Path(self.config.output_dir) / target
             if target_path.exists() and target_path.is_dir():
                 destination = good_files_dir / target
@@ -67,23 +64,23 @@ class GoodFiles:
         managed_dir = path / "Unitystation_Data" / "Managed"
         self.clean_managed(managed_dir)
         self.copy_bundled_dlls("StandaloneWindows64", managed_dir)
-        (path / "Unitystation_Data" / "Resources").rmdir()
-        (path / "Unitystation_Data" / "StreamingAssets").rmdir()
+        shutil.rmtree(path / "Unitystation_Data" / "Resources", ignore_errors=True)
+        shutil.rmtree(path / "Unitystation_Data" / "StreamingAssets", ignore_errors=True)
         self.clean_files_in_directory(path / "Unitystation_Data")
 
     def prepare_linux(self, path):
         managed_dir = path / "Unitystation_Data" / "Managed"
         self.clean_managed(managed_dir)
         self.copy_bundled_dlls("StandaloneLinux64", managed_dir)
-        (path / "Unitystation_Data" / "Resources").rmdir()
-        (path / "Unitystation_Data" / "StreamingAssets").rmdir()
+        shutil.rmtree(path / "Unitystation_Data" / "Resources", ignore_errors=True)
+        shutil.rmtree(path / "Unitystation_Data" / "StreamingAssets", ignore_errors=True)
         self.clean_files_in_directory(path / "Unitystation_Data")
 
     def prepare_mac(self, path):
         managed_dir = path / "Unitystation.app" / "Contents" / "Resources" / "Data" / "Managed"
         self.clean_managed(managed_dir)
         self.copy_bundled_dlls("StandaloneOSX", managed_dir)
-        (path / "Unitystation.app" / "Contents" / "Resources" / "Data" / "StreamingAssets").rmdir()
+        shutil.rmtree(path / "Unitystation.app" / "Contents" / "Resources" / "Data" / "StreamingAssets", ignore_errors=True)
         self.clean_files_in_directory(path / "Unitystation.app" / "Contents" / "Resources" / "Data")
 
     def copy_bundled_dlls(self, target, managed_dir):
@@ -97,11 +94,14 @@ class GoodFiles:
 
     def clean_managed(self, managed_dir):
         for file_path in managed_dir.iterdir():
-            if file_path.is_file():
-                if file_path.stem not in self.files_to_keep_in_managed:
-                    file_path.unlink()
+            if file_path.is_dir():
+                shutil.rmtree(file_path)
+            elif file_path.is_file() and file_path.stem not in self.files_to_keep_in_managed:
+                file_path.unlink()
 
     def clean_files_in_directory(self, dir_path):
         for file_path in dir_path.iterdir():
-            if file_path.is_file():
+            if file_path.is_dir():
+                shutil.rmtree(file_path)
+            elif file_path.is_file():
                 file_path.unlink()
