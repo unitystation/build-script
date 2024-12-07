@@ -57,3 +57,31 @@ class Gitter:
     def start_gitting(self) -> None:
         self.prepare_git_directory()
         self.config.project_path = self.local_repo_dir / "UnityProject"
+
+    def get_Good_file_tag(self) -> str:
+        log.debug("Searching for the latest 'good-file-*' tag...")
+
+        # Fetch all tags from the repository
+        tags = self.local_repo.tags
+
+        # Filter tags that start with 'good-file-'
+        good_file_tags = [tag for tag in tags if tag.name.startswith("good-file-")]
+
+        if not good_file_tags:
+            raise ValueError("No 'good-file-*' tags found in the repository.")
+
+        # Sort tags by their commit date (ascending)
+        good_file_tags_sorted = sorted(
+            good_file_tags,
+            key=lambda tag: tag.commit.committed_datetime,
+        )
+
+        # Return the latest tag (last in the sorted list)
+        latest_tag = good_file_tags_sorted[-1].name
+        log.debug(f"Latest 'good-file-*' tag found: {latest_tag}")
+        return latest_tag
+
+
+
+
+        

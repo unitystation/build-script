@@ -9,6 +9,7 @@ from usautobuild.actions import (
     Licenser,
     Uploader,
     tag_as_stable,
+    GoodFiles
 )
 from usautobuild.cli import args
 from usautobuild.config import Config
@@ -48,10 +49,21 @@ def _real_main(config: Config) -> None:
     uploader = Uploader(config)
     dockerizer = Dockerizer(config)
 
+    do_good_files = GoodFiles(config)
+
     gitter.start_gitting()
+
     builder.start_building()
+
+    if (config.do_good_files):
+        tag = gitter.get_Good_file_tag().replace("good-file-", "")
+        if not uploader.check_good_file_version_folder_exists(tag):
+            do_good_files.make_good_files_build()
+            uploader.Zip_And_Upload_Good_files(tag)
+    
     uploader.start_upload()
     dockerizer.start_dockering()
+
 
     if config.release:
         api_caller = ApiCaller(config)
