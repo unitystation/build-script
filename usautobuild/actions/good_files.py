@@ -3,6 +3,8 @@ import shutil
 from logging import getLogger
 from pathlib import Path
 
+import os
+
 from usautobuild.config import Config
 from usautobuild.exceptions import (
     BuildFailedError,
@@ -31,6 +33,7 @@ class GoodFiles:
             if target == "linuxserver":
                 log.debug("Skipping %s", target)
                 continue
+            
             target_path = Path(self.config.output_dir) / target
             if target_path.exists() and target_path.is_dir():
                 destination = good_files_dir / target
@@ -93,15 +96,15 @@ class GoodFiles:
             log.warning("Bundled DLL directory does not exist: %s", bundled_dll_dir)
 
     def clean_managed(self, managed_dir):
-        for file_path in managed_dir.iterdir():
-            if file_path.is_dir():
-                shutil.rmtree(file_path)
-            elif file_path.is_file() and file_path.stem not in self.files_to_keep_in_managed:
-                file_path.unlink()
+        for file in os.listdir(managed_dir):
+            file_path = os.path.join(managed_dir, file)
+            if os.path.isfile(file_path):
+                file_name, _ = os.path.splitext(file)
+                if file_name not in self.files_to_keep_in_managed:
+                    os.remove(file_path)
 
     def clean_files_in_directory(self, dir_path):
-        for file_path in dir_path.iterdir():
-            if file_path.is_dir():
-                shutil.rmtree(file_path)
-            elif file_path.is_file():
-                file_path.unlink()
+        for file in os.listdir(dir_path):
+            file_path = os.path.join(dir_path, file)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
