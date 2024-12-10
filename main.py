@@ -49,9 +49,11 @@ def _real_main(config: Config) -> None:
     uploader = Uploader(config)
     dockerizer = Dockerizer(config)
 
-    do_good_files = GoodFiles(config)
+
 
     gitter.start_gitting()
+
+    do_good_files = GoodFiles(config)
 
     builder.start_building()
 
