@@ -148,6 +148,7 @@ class Builder:
             f"-v {self.config.output_dir}:/root/builds "
             f"-v {cwd /'logs'}:/root/logs "
             f"-v {cwd / self.config.license_file}:/root/.local/share/unity3d/Unity/Unity_lic.ulf "
+            f"-v {cwd / local_repo}:/root/local_repo"
         )
 
     def generate_build_args(self, target: str) -> str:
