@@ -37,6 +37,11 @@ class GoodFiles:
             target_path = Path(self.config.output_dir) / target
             if target_path.exists() and target_path.is_dir():
                 destination = good_files_dir / target
+                
+                # Clear the destination if it already exists
+                if destination.exists():
+                    shutil.rmtree(destination)
+
                 shutil.copytree(target_path, destination, dirs_exist_ok=True)
                 self.prepare_target(target, destination)
             else:
