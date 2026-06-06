@@ -61,7 +61,7 @@ def _real_main(config: Config) -> None:
         tag = gitter.get_Good_file_tag().replace("good-file-", "")
         if not uploader.check_good_file_version_folder_exists(tag):
             do_good_files.make_good_files_build()
-            uploader.Zip_And_Upload_Good_files(tag)
+            uploader.zip_and_upload_good_files(tag)
     
     uploader.start_upload()
     dockerizer.start_dockering()

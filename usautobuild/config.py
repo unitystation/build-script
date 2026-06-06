@@ -15,9 +15,9 @@ DEFAULT_BRANCH = "develop"
 class Config(ConfigBase):
     release: bool = False
     do_good_files : bool
-    cdn_host: str
-    cdn_user: str
-    cdn_password: str
+    r2_account_id: str
+    r2_access_key_id: str
+    r2_secret_access_key: str
     docker_password: str
     docker_username: str
     changelog_api_url: str
@@ -31,7 +31,8 @@ class Config(ConfigBase):
 
     unity_version = "2020.1.17f1"
     target_platforms = ["linuxserver", "StandaloneWindows64", "StandaloneOSX", "StandaloneLinux64"]
-    cdn_download_url = "https://unitystationfile.b-cdn.net/{}/{}/{}.zip"
+    cdn_download_url = "https://cdn.unitystation.org/{}/{}/{}.zip"
+    r2_bucket = "unitystation"
     forkname = "UnityStationDevelop"
 
     discord_webhook: Optional[str] = None
