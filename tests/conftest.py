@@ -12,9 +12,9 @@ from usautobuild.config import Config
 @mock.patch.dict(
     os.environ,
     {
-        "CDN_HOST": "host",
-        "CDN_USER": "user",
-        "CDN_PASSWORD": "password",
+        "R2_ACCOUNT_ID": "account",
+        "R2_ACCESS_KEY_ID": "key",
+        "R2_SECRET_ACCESS_KEY": "secret",
         "DOCKER_PASSWORD": "password",
         "DOCKER_USERNAME": "username",
         "CHANGELOG_API_URL": "url",
