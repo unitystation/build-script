@@ -32,8 +32,15 @@ class Config(ConfigBase):
     unity_version = "2020.1.17f1"
     target_platforms = ["linuxserver", "StandaloneWindows64", "StandaloneOSX", "StandaloneLinux64"]
     cdn_download_url = "https://cdn.unitystation.org/{}/{}/{}.zip"
-    r2_bucket = "unitystation"
+    # First bucket is the primary (will always have the full content)
+    # the rest are regional replicas that are synced from the primary
+    r2_buckets = ["unitystation", "unitystation-weur", "unitystation-enam"]
     forkname = "UnityStationDevelop"
+
+    # Build retention: keep the newest N builds per platform PLUS anything
+    # younger than the age floor. 0 will disable pruning.
+    prune_keep_builds = 20
+    prune_min_age_days = 30
 
     discord_webhook: Optional[str] = None
 
