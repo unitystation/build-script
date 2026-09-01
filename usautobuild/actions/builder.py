@@ -24,10 +24,10 @@ exec_name = {
 }
 
 platform_image = {
-    "linuxserver": "-linux-il2cpp-3.2.0",
-    "StandaloneLinux64": "-base-3.2.0",
-    "StandaloneWindows64": "-windows-mono-3.2.0",
-    "StandaloneOSX": "-mac-mono-3.2.0",
+    "linuxserver": "-linux-il2cpp-3.2.2",
+    "StandaloneLinux64": "-base-3.2.2",
+    "StandaloneWindows64": "-windows-mono-3.2.2",
+    "StandaloneOSX": "-mac-mono-3.2.2",
 }
 
 platform_subtarget = {
