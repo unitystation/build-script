@@ -5,6 +5,8 @@ from pathlib import Path
 
 import os
 
+import requests
+
 from usautobuild.config import Config
 from usautobuild.exceptions import (
     BuildFailedError,
@@ -20,9 +22,13 @@ class GoodFiles:
         self.files_to_keep_in_managed = self.get_files_to_keep_in_managed()
 
     def get_files_to_keep_in_managed(self):
-        path = Path.cwd() / "local_repo/Tools/CodeScanning/CodeScan/CodeScan/bin/Debug/net7.0/FilesToMoveToManaged.json"
-        with path.open('r') as file:
-            return json.load(file)
+        url = "https://raw.githubusercontent.com/unitystation/codescan/main/FilesToMoveToManaged.json"
+        try:
+            response = requests.get(url, timeout=30)
+            response.raise_for_status()
+            return response.json()
+        except (requests.exceptions.RequestException, ValueError) as exc:
+            raise BuildFailedError(f"Failed to load managed files from codescan: {exc}") from exc
 
     def make_good_files_build(self) -> None:
         good_files_dir = Path(self.config.output_dir) / "good_files"
